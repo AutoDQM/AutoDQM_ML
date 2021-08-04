@@ -1,0 +1,17 @@
+{
+    "CSC": [
+        "/Run summary/CSCOfflineMonitor/Digis/hWireTBin_p11b",
+        "/Run summary/CSCOfflineMonitor/Segments/hSnSegments",
+        "/Run summary/CSCOfflineMonitor/Segments/hSGlobalTheta",
+        "/Run summary/CSCOfflineMonitor/Segments/hSGlobalPhi",
+        "/Run summary/CSCOfflineMonitor/Segments/hSTimeCombined",
+        "/Run summary/CSCOfflineMonitor/recHits/hRHTimingAnodem11a",
+        "/Run summary/CSCOfflineMonitor/recHits/hRHTimingm22",
+        "/Run summary/CSCOfflineMonitor/recHits/hRHSumQm11a",
+        "/Run summary/CSCOfflineMonitor/recHits/hRHnrechits",
+        "/Run summary/CSCOfflineMonitor/Digis/hWireTBin_p32",
+        "/Run summary/CSCOfflineMonitor/BXMonitor/hCLCTL1A",
+        "/Run summary/CSCOfflineMonitor/Resolution/hSResidp12"
+    ]
+}
+
