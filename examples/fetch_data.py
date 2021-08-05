@@ -4,7 +4,7 @@ from autodqm_ml.utils import setup_logger
 logger = setup_logger("DEBUG", "output/log.txt")
 fetcher = DataFetcher(
         tag = "test", # will identify output files
-        contents = "metadata/contents_example.json",
+        contents = "metadata/cl2_example.json",
         datasets = "metadata/datasets_example.json",
         short = True
 )

@@ -195,7 +195,7 @@ class AutoEncoder_DNN(keras.models.Model):
 
         for i in range(self.n_hidden_layers):
             if i == (self.n_hidden_layers - 1):
-                activation = None
+                activation = "relu"
                 n_filters = 1
                 name = "output_%s" % (histogram.name_)
             else:
