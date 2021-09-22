@@ -42,9 +42,10 @@ class Histogram():
             return
 
         if self.n_entries <= 0:
-            message = "[Histogram : normalize] Histogram must have > 0 entries to normalize but histogram %s has %d entries." % (self.name, self.n_entries)
-            logger.exception(message)
-            raise Exception(message)
-
-        self.data = self.data / float(self.n_entries)
+        #    message = "[Histogram : normalize] Histogram must have > 0 entries to normalize but histogram %s has %d entries." % (self.name, self.n_entries)
+        #    logger.exception(message)
+        #    raise Exception(message)
+            self.data = self.data
+        else:
+            self.data = self.data / float(self.n_entries)
         self.is_normalized = True
