@@ -197,7 +197,7 @@ class DataFetcher():
                         self.data[pd] = self.data[pd].append(df, ignore_index=True)
 
                     if self.short:
-                        if len(self.data[pd]) > 64:
+                        if len(self.data[pd]) > 2:
                             continue
         
 

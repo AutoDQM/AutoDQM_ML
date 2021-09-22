@@ -53,7 +53,7 @@ def maximum(a, b):
     return b
 
 a = AutoEncoder(name = "test")
-a.train(histograms = names, file = file, n_epochs = 400, batch_size = 2000, config = {})
+a.train(histograms = names, file = file, config = {}, n_epochs = 400, batch_size = 2000)
 NAME_PLOT_NO = 1
 RECO_INPUT_PLOT_NO = 20
 
