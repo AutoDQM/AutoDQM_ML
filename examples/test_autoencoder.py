@@ -53,9 +53,9 @@ def maximum(a, b):
     return b
 
 a = AutoEncoder(name = "test")
-a.train(histograms = names, file = file, config = {}, n_epochs = 400, batch_size = 2000)
+a.train(histograms = names, file = file, n_epochs = 400, batch_size = 2000, config = {})
 NAME_PLOT_NO = 1
-RECO_INPUT_PLOT_NO = 562
+RECO_INPUT_PLOT_NO = 20
 
 n_bins = df[names[0]][RECO_INPUT_PLOT_NO].shape[0]
 sum_of_rows = df[names[0]][RECO_INPUT_PLOT_NO].sum()
