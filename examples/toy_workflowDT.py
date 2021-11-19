@@ -13,23 +13,23 @@ logger = setup_logger("INFO")
 
 training_file = 'scripts/output/test_SingleMuon.pkl' #"scripts/output/test_9Jun2021_SingleMuon.pkl"
 
-wheels = [-2,0]
-secs = [1,5]
-sts = [1,2]
+wheels = [-2]#,0]
+secs = [1,5,10]
+sts = [1,2,3,4]
 
 t0  = [f'DT/Run summary/02-Segments/Wheel{w}/Sector{sec}/Station{st}/T0_FromSegm_W{w}_Sec{sec}_St{st}' for w,sec,st in zip(wheels,secs,sts)]
-h4d = [f'DT/Run summary/02-Segments/Wheel{w}/Sector{sec}/Station{st}/h4DSegmNHits_W{w}_St{st}_Sec{sec}' for w,sec,st in zip(wheels,secs,sts)]
-vdrift = [f'DT/Run summary/02-Segments/Wheel{w}/Sector{sec}/Station{st}/VDrift_FromSegm_W{w}_Sec{sec}_St{st}' for w,sec,st in zip(wheels,secs,sts)]
-histnames = t0 + h4d + vdrift 
+#h4d = [f'DT/Run summary/02-Segments/Wheel{w}/Sector{sec}/Station{st}/h4DSegmNHits_W{w}_St{st}_Sec{sec}' for w,sec,st in zip(wheels,secs,sts)]
+#vdrift = [f'DT/Run summary/02-Segments/Wheel{w}/Sector{sec}/Station{st}/VDrift_FromSegm_W{w}_Sec{sec}_St{st}' for w,sec,st in zip(wheels,secs,sts)]
+histnames = t0 #+ h4d + vdrift 
 
 
 histograms = {histname:{'normalize':True} for histname in histnames}
 
 p = PCA("my_pca")
 a = AutoEncoder("my_autoencoder")
+algos = [p]
 
-
-for x in [p, a]:
+for x in algos:
     x.load_data(
         file = training_file,
         histograms = histograms,
@@ -46,12 +46,12 @@ for x in [p, a]:
         
 
 test_runs = p.data["run_number"]["test"]
-test = test_runs[0:3]
+test = test_runs[0:10]
 ref = test_runs[10]
 
 
 results = {}
-for x in [p, a]:
+for x in algos:
     results[x.name] = x.evaluate(
             runs = test,
             reference = ref,
@@ -65,6 +65,6 @@ for x in [p, a]:
 
 for run in test:
     logger.info("Run: %d" % run)
-    for x in [p, a]:
+    for x in algos:
         logger.info("Algorithm: %s, results: %s" % (x.name, results[x.name][run]))
 

@@ -1,7 +1,7 @@
-import matplotlib.pyplot as plt 
 import numpy as np 
 from pathlib import Path
 import awkward
+import plotly.graph_objects as go
 
 
 def plot1D(original_hist, reconstructed_hist, run, hist_path, algo, threshold):    
@@ -19,35 +19,71 @@ def plot1D(original_hist, reconstructed_hist, run, hist_path, algo, threshold):
     :param threshold: threshold to determind histogram anomaly
     :type threshold: int
     """
-    fig, ax = plt.subplots()
+
     mse = np.mean(np.square(original_hist - reconstructed_hist))
     
     # for bin edges
     binEdges = np.linspace(0, 1, original_hist.shape[0])
     width = binEdges[1] - binEdges[0]
-    # plot original/recon 
-    ax.bar(binEdges, original_hist, alpha=0.5, label='original', width=width)
-    ax.bar(binEdges, reconstructed_hist, alpha=0.5, label='reconstructed', width=width)
     plotname = hist_path.split('/')[-1]
-    ax.set_title(f'{plotname} {run} {algo}')
-    leg = ax.legend(loc='upper right')
     text = '\n'.join((
         f'mse: {mse:.4e}',
         ))
-    props = dict(boxstyle='round', facecolor='white', alpha=0.5)
-    ax.text(.8, 0.1*max(original_hist.max(), reconstructed_hist.max()), text, wrap=True, bbox=props )
-    # create directory to save plot
+
+    # creating figure and plotting the bar plots of original and reconstructed hists
+    c = go.Figure() 
+    c.add_trace(go.Bar(name="original", x=binEdges, y=original_hist, marker_color='white', marker=dict(line=dict(width=1,color='red'))))
+    c.add_trace(go.Bar(name="reconstructed", x=binEdges, y=reconstructed_hist, marker_color='rgb(204, 188, 172)', opacity=.9))
+    c['layout'].update(bargap=0)
+    c['layout'].update(barmode='overlay')
+    c['layout'].update(plot_bgcolor='white')
+    c.update_xaxes(showline=True, linewidth=2, linecolor='black', mirror=True, showgrid=False)
+    c.update_yaxes(showline=True, linewidth=2, linecolor='black', mirror=True, showgrid=False)
+    c.update_layout(
+        title=f'{plotname} {run} {algo}' , title_x=0.5,
+        font=dict(
+            family="Times New Roman",
+            size=12,
+            color="black"
+        )
+    )
+
+    # add mse onto plots
+    c['layout'].update(
+        annotations=[
+            dict(
+                text= f'mse: {mse:.4e}',
+                xref="x domain",
+                yref="y domain",
+                x = 0.96,
+                y = 0.05,
+                bordercolor='black',
+                borderwidth=1,
+                font = {'size':13},
+                bgcolor = 'rgba(255,255,255,0.8)', 
+                borderpad = 3, 
+                showarrow=False
+            )
+        ]
+    )
     Path(f'plots/{algo}/{run}').mkdir(parents=True, exist_ok=True)
-    fig.savefig(f'plots/{algo}/{run}/{plotname}.png')
-    plt.close('all')
+    c.write_image(f'plots/{algo}/{run}/{plotname}.png')
     
-    if mse > threshold: 
-        fig2, ax2 = plt.subplots()
-        ax2.bar(binEdges, np.square(original_hist - reconstructed_hist), alpha=0.5, width=width)
-        ax2.set_title(f'MSE {plotname} {run}')
-        fig2.savefig(f'plots/{algo}/{run}/{plotname}-MSE.png')
-        plt.close('all')
-    
+
+    # create mse plots
+    if mse > threshold:
+        c = go.Figure(go.Bar(x=binEdges, y=np.square(original_hist - reconstructed_hist)))
+        c.update_xaxes(showline=True, linewidth=2, linecolor='black', mirror=True, showgrid=False)
+        c.update_yaxes(showline=True, linewidth=2, linecolor='black', mirror=True, showgrid=False)
+        c.update_layout(
+            title = f'MSE {plotname} {run}', title_x=0.5,
+            font=dict(
+                family="Times New Roman",
+                size=12,
+                color="black"
+            )   
+        )
+        c.write_image(f'plots/{algo}/{run}/{plotname}-MSE.png')
 
 def plotMSESummary(original_hists, reconstructed_hists, threshold, hist_paths, runs, algo): 
     """ 
@@ -58,8 +94,8 @@ def plotMSESummary(original_hists, reconstructed_hists, threshold, hist_paths, r
     :type original_hist: numpy array of shape (n, )
     :param reconstructed_hist: reconstructed histogram from the ML algorithm
     :type reconstructed_hist: numpy array of shape (n, )
-    :param threshold: threshold to determind histogram anomaly
-    :type threshold: int
+    :param thresholds: threshold to determind histogram anomaly
+    :type threshold: dict or None
     :param hist_path: list of name of histograms
     :type hist_path: list
     :param runs: list of runs used for testing. Must be same as list passed into the pca or autoencoder.plot function 
@@ -72,7 +108,6 @@ def plotMSESummary(original_hists, reconstructed_hists, threshold, hist_paths, r
     original_hists = awkward.Array(original_hists)
     reconstructed_hists = awkward.Array(reconstructed_hists)
     
-    fig, ax = plt.subplots()
     mse = np.mean(np.square(original_hists - reconstructed_hists), axis=1)
     
     ## count number of good and bad histogrms
@@ -82,10 +117,6 @@ def plotMSESummary(original_hists, reconstructed_hists, threshold, hist_paths, r
     ## get names of top 5 highest mse histograms
     ## plot_names[argsort[-1]] should be the highest mse histogram
     sortIdx = np.argsort(mse)
-
-    hist,_, _ = ax.hist(mse)
-    ax.set_xlabel('MSE values') 
-    ax.set_title('Summary of all MSE values')
     
     numHistText = [f'num good hists: {num_good_hists}', f'num bad hists: {num_bad_hists}']
     ## mse summary is for all plots in all runs, so need to make names accordingly
@@ -97,10 +128,32 @@ def plotMSESummary(original_hists, reconstructed_hists, threshold, hist_paths, r
     maxidx = min(5, len(hist_names_runs))+1
     ## plot_name is the whole directory, so we only need the last for histname
     rankHistText = [f'{hist_names_runs[sortIdx[i]].split("/")[-1]}: {mse[sortIdx[i]]:.4e}' for i in range(-1, -maxidx, -1)]
-    text = '\n'.join(
-        numHistText + rankHistText
+    text = '<br>'.join(numHistText + rankHistText)
+
+    # create plots
+    c = go.Figure(go.Histogram(x=mse))
+    c.update_layout(
+        title = 'Summary of all MSE values', title_x=0.5,
+        xaxis_title= 'MSE values',
+        font=dict(
+            family="Times New Roman",
+            size=12,
+            color="black"
+        ),
+        annotations = [dict(
+            text=text,
+            align='left',
+            showarrow=False,
+            xref='paper',
+            yref='paper',
+            x=1,
+            y=0,
+            
+            bordercolor='black',
+            borderwidth=1,
+            bgcolor = 'rgba(255,255,255,0.5)'
+            
+        )
+                   ] 
     )
-    props = dict(boxstyle='round', facecolor='white', alpha=0.5)
-    ax.text(1.1*max(mse), 0.5*max(hist), text, wrap=True, bbox=props)
-    
-    fig.savefig(f'plots/{algo}/MSE_Summary.png', bbox_inches='tight')
+    c.write_image(f'plots/{algo}/MSE_Summary.png')
