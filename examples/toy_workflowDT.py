@@ -17,17 +17,18 @@ wheels = [-2]#,0]
 secs = [1,5,10]
 sts = [1,2,3,4]
 
-t0  = [f'DT/Run summary/02-Segments/Wheel{w}/Sector{sec}/Station{st}/T0_FromSegm_W{w}_Sec{sec}_St{st}' for w,sec,st in zip(wheels,secs,sts)]
+t0  = [f'DT/Run summary/02-Segments/Wheel{w}/Sector{sec}/Station{st}/T0_FromSegm_W{w}_Sec{sec}_St{st}' for w in wheels for sec in secs for st in sts]
 #h4d = [f'DT/Run summary/02-Segments/Wheel{w}/Sector{sec}/Station{st}/h4DSegmNHits_W{w}_St{st}_Sec{sec}' for w,sec,st in zip(wheels,secs,sts)]
 #vdrift = [f'DT/Run summary/02-Segments/Wheel{w}/Sector{sec}/Station{st}/VDrift_FromSegm_W{w}_Sec{sec}_St{st}' for w,sec,st in zip(wheels,secs,sts)]
 histnames = t0 #+ h4d + vdrift 
-
-
 histograms = {histname:{'normalize':True} for histname in histnames}
+
+thresholds = {histname: 1 for histname in histnames}
+
 
 p = PCA("my_pca")
 a = AutoEncoder("my_autoencoder")
-algos = [p]
+algos = [a]#,a]
 
 for x in algos:
     x.load_data(
@@ -45,7 +46,7 @@ for x in algos:
         x.save_model(model_file='models')
         
 
-test_runs = p.data["run_number"]["test"]
+test_runs = algos[0].data["run_number"]["test"]
 test = test_runs[0:10]
 ref = test_runs[10]
 
@@ -55,7 +56,8 @@ for x in algos:
     results[x.name] = x.evaluate(
             runs = test,
             reference = ref,
-            histograms = list(histograms.keys())
+            histograms = list(histograms.keys()),
+        thresholds = thresholds, 
     )
     
     x.plot(runs = test, 

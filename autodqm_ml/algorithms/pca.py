@@ -98,9 +98,9 @@ class PCA(MLAlgorithm):
             pca.fit(inputs)
             self.model[name] = pca
 
-    def evaluate_run(self, histograms, threshold = None, reference = None, metadata = {}):
-        if threshold is None:
-            threshold = 0.00001 # FIXME hard-coded for now
+    def evaluate_run(self, histograms, thresholds = None, reference = None, metadata = {}):
+        if thresholds is None:
+            threshold = {} # define as empty dict, so when call it gives default value
 
         results = {}
 
@@ -121,14 +121,14 @@ class PCA(MLAlgorithm):
 
             results[histogram.name] = {
                     "score" : sse,
-                    "decision" : sse > threshold
+                    "decision" : sse > thresholds.get(histogram.name, 0.00001)
             }
 
         return results
 
 
 
-    def plot(self, runs, histograms=None, threshold=None):
+    def plot(self, runs, histograms=None, thresholds=None):
         """
         Plots reconstructed histograms on top of original histograms. If the SSE between the plotted histograms are above the threshold, SSE plots will also be made.Either pca.train() or pca.load_model() must be called before plot. 
         
@@ -139,9 +139,9 @@ class PCA(MLAlgorithm):
         :param threshold: threshold to identify histogram as anomalous. If None, threshold will be set to 0.00001. 
         :type threshold: float, Default threshold = None
         """
-        # threshold hardcoded for now
-        if threshold==None:
-            threshold = 0.00001
+        # threshold defined as empty dict so when call, default returns default value 
+        if thresholds==None:
+            thresholds = {} 
 
         if histograms==None:
             histograms = self.histograms
@@ -162,19 +162,24 @@ class PCA(MLAlgorithm):
                     )
                 
                 original_hist = numpy.array(h.data).reshape(1, -1)
-                original_hists.append(original_hist.flatten())
 
-                # Transform to latent space                                                                                                                         
+                # Transform to latent space               
                 transformed_hist = self.model[h.name].transform(original_hist)
                 
-                # Reconstruct latent representation back in original space                                                                                          
+                # Reconstruct latent representation back in original space                                                      
                 reconstructed_hist = self.model[h.name].inverse_transform(transformed_hist)
+
+                # append t o lists for use in MSE summary calc
+                original_hists.append(original_hist.flatten())
                 reconstructed_hists.append(reconstructed_hist.flatten())
+
+                # define threshold value to pass into plot functions
+                threshold = thresholds.get(histogram, 0.00001)
 
                 # plot1D takes array of shape (n,), but original and reco have shape (n,1)
                 plot1D(original_hist.flatten(), reconstructed_hist.flatten(), run, h.name, self.name, threshold)
 
         # plot mse summary 
-        plotMSESummary(original_hists, reconstructed_hists, threshold, histograms, runs, self.name)
+        plotMSESummary(original_hists, reconstructed_hists, thresholds, histograms, runs, self.name)
 
  

@@ -71,6 +71,9 @@ def plot1D(original_hist, reconstructed_hist, run, hist_path, algo, threshold):
     
 
     # create mse plots
+
+    print(threshold)
+
     if mse > threshold:
         c = go.Figure(go.Bar(x=binEdges, y=np.square(original_hist - reconstructed_hist)))
         c.update_xaxes(showline=True, linewidth=2, linecolor='black', mirror=True, showgrid=False)
@@ -85,7 +88,7 @@ def plot1D(original_hist, reconstructed_hist, run, hist_path, algo, threshold):
         )
         c.write_image(f'plots/{algo}/{run}/{plotname}-MSE.png')
 
-def plotMSESummary(original_hists, reconstructed_hists, threshold, hist_paths, runs, algo): 
+def plotMSESummary(original_hists, reconstructed_hists, thresholds, hist_paths, runs, algo): 
     """ 
     Plots all the MSE on one plot that also shows how many passese threhold
     
@@ -109,10 +112,19 @@ def plotMSESummary(original_hists, reconstructed_hists, threshold, hist_paths, r
     reconstructed_hists = awkward.Array(reconstructed_hists)
     
     mse = np.mean(np.square(original_hists - reconstructed_hists), axis=1)
+
+
+    ## make the thresholds dict into an array that matches the size of all plots coming in. original_hists can be 
+    ## many plots with same name (but different runs). make threshold arr that same size as original_hists with corresponding
+    ## threshold val
+    thresholdsarr = np.full(len(original_hists), 0.00001)
+    for i,x in enumerate(hist_paths):
+        if x in thresholds:
+            thresholdsarr[i] = thresholds[x]
     
     ## count number of good and bad histogrms
-    num_good_hists = np.count_nonzero(mse < threshold)
-    num_bad_hists = np.count_nonzero(mse > threshold)
+    num_good_hists = np.count_nonzero(mse < thresholdsarr)
+    num_bad_hists = np.count_nonzero(mse > thresholdsarr)
     
     ## get names of top 5 highest mse histograms
     ## plot_names[argsort[-1]] should be the highest mse histogram

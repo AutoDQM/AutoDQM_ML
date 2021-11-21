@@ -60,9 +60,9 @@ class AutoEncoder(MLAlgorithm):
         return self.model.predict(inputs, batch_size = batch_size)
 
 
-    def evaluate_run(self, histograms, threshold = None, reference = None, metadata = {}):
-        if threshold is None:
-            threshold = 0.00001 # FIXME hard-coded for now
+    def evaluate_run(self, histograms, thresholds = None, reference = None, metadata = {}):
+        if thresholds is None:
+            thresholds = {} # set empty dict so default value returned when called
 
         inputs, outputs = self.make_inputs(histograms = histograms)
         pred = self.model.predict(inputs, batch_size = 1024)
@@ -74,18 +74,18 @@ class AutoEncoder(MLAlgorithm):
             score = sse[idx+1] 
             results[histogram.name] = {
                     "score" : score,
-                    "decision" : score > threshold
+                    "decision" : thresholds.get(histogram.name, 0.00001)
             }
 
         results["global"] = {
                 "score" : sse[0],
-                "decision" : sse[0] > threshold
+                "decision" : sse[0] > 0.00001
         }
 
         return results
 
 
-    def plot(self, runs, histograms = None, threshold = None):
+    def plot(self, runs, histograms = None, thresholds = None):
         """
         Plots reconstructed histograms on top of original histograms. If MSE between plotted histograms are ablove the threshold, SE plots will be constructed for the histogram
 
@@ -96,8 +96,8 @@ class AutoEncoder(MLAlgorithm):
         :param threshold: threshold to identify histogram as anomalous. If None, threshold will be set to 0.00001. 
         :type threshold: float, Default threshold = None
         """
-        if threshold==None:
-            threshold = 0.0001
+        if thresholds==None:
+            thresholds={}
         if histograms==None:
             histograms = self.histograms 
             
@@ -114,19 +114,25 @@ class AutoEncoder(MLAlgorithm):
             inputs, outputs = self.make_inputs(histograms = hists)
             pred = self.model.predict(inputs, batch_size = 1024)
             
-            #sse = self.model.evaluate(inputs, outputs, batch_size = 1024)
-            
             inputslist = list(inputs.values())
             
             for i,x in enumerate(pred):
                 # plot1D takes (n, ) shape so need to flatten
                 original_hist = inputslist[i].numpy().flatten()
-                original_hists.append(original_hist)
+                
                 # pred[i] has the shape (1,n,1) while iputslist[i] has shape (1,n), so reshape
                 reconstructed_hist = x[:,:,0].flatten()
+                
+                #append for mse summary
+                original_hists.append(original_hist)
                 reconstructed_hists.append(reconstructed_hist)
+                
+                # find the threshold for this hist to pass into plot
+                threshold = histogram[i]
+
                 plot1D(original_hist, reconstructed_hist, run, histograms[i], self.name, threshold)
-        plotMSESummary(original_hists, reconstructed_hists, threshold, histograms, runs, self.name)
+
+        plotMSESummary(original_hists, reconstructed_hists, thresholds, histograms, runs, self.name)
         
 
     def make_inputs(self, split = None, histograms = None, N = None):

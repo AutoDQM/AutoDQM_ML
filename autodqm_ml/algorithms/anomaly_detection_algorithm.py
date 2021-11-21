@@ -170,7 +170,7 @@ class AnomalyDetectionAlgorithm():
         self.data_is_loaded = True
 
 
-    def evaluate(self, runs = None, reference = None, histograms = None, threshold = None, metadata = {}):
+    def evaluate(self, runs = None, reference = None, histograms = None, thresholds = None, metadata = {}):
         """
 
         """
@@ -181,6 +181,9 @@ class AnomalyDetectionAlgorithm():
 
         if histograms is None:
             histograms = self.histograms
+
+        if thresholds is not None:
+            self.thresholds = thresholds
 
         h_ref = {}
         if reference is not None:
@@ -201,7 +204,7 @@ class AnomalyDetectionAlgorithm():
                         reference = h_ref[histogram] if reference is not None else None
                 )
                 hists.append(h)
-            results[run] = {x : y for x, y in self.evaluate_run(histograms = hists, threshold = threshold, metadata = metadata).items() if x in histograms}
+            results[run] = {x : y for x, y in self.evaluate_run(histograms = hists, thresholds = thresholds, metadata = metadata).items() if x in histograms}
 
         return results
 
