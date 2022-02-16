@@ -41,7 +41,7 @@ class PCA(MLAlgorithm):
         with open(model_file, "r") as f_in:
             pcaParams = json.load(f_in)
 
-        pca = decomposition.PCA(random_state = 0)
+        pca = decomposition.PCA(random_state = 536)
 
         pca.components_ = numpy.array(pcaParams['components_'])
         pca.explained_variance_ = numpy.array(pcaParams['explained_variance_'])

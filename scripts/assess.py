@@ -45,7 +45,7 @@ def parse_arguments():
         help = "number of runs to make original/reconstructed plots for",
         type = int,
         required = False,
-        default = 3
+        default = 1
     )
     parser.add_argument(
         "--runs",
@@ -119,16 +119,26 @@ def main(args):
     
 
     # Print out runs with N highest sse scores for each histogram
-    N = 5
-    for h, info in histograms.items():
-        for algorithm, algorithm_info in info["algorithms"].items():
-            runs_sorted = runs[awkward.argsort(runs[algorithm_info["score"]], ascending=False)]
-            logger.info("[assess.py] For histogram '%s', algorithm '%s', the mean +/- std anomaly score is: %.2e +/- %.2e." % (h, algorithm, awkward.mean(runs[algorithm_info["score"]]), awkward.std(runs[algorithm_info["score"]])))
-            #logger.info("[assess.py] For histogram '%s', algorithm '%s', the runs with the highest anomaly scores are: " % (h, algorithm)) 
-            logger.info("\t The runs with the highest anomaly scores are:")
-            for i in range(N):
-                logger.info("\t Run number : %d, Anomaly Score : %.2e" % (runs_sorted.run_number[i], runs_sorted[algorithm_info["score"]][i]))
+    N = 1
+    
+    hname = h.split('/')[-1]
+    
+    with open('allscores.csv','a') as csvfile:
+        #csvfile.write('histogram,run,score\n')
+        for h, info in histograms.items():
+            for algorithm, algorithm_info in info["algorithms"].items():
+                runs_sorted = runs[awkward.argsort(runs[algorithm_info["score"]], ascending=False)]
+                            
+                logger.info("[assess.py] For histogram '%s', algorithm '%s', the mean +/- std anomaly score is: %.2e +/- %.2e." % (h, algorithm, awkward.mean(runs[algorithm_info["score"]]), awkward.std(runs[algorithm_info["score"]])))
+                #logger.info("[assess.py] For histogram '%s', algorithm '%s', the runs with the highest anomaly scores are: " % (h, algorithm)) 
+                logger.info("\t The runs with the highest anomaly scores are:")
+                
+                 
+                for i in range(len(runs)):#range(N):
+                    logger.info("\t Run number : %d, Anomaly Score : %.2e" % (runs_sorted.run_number[i], runs_sorted[algorithm_info["score"]][i]))
+                    csvfile.write(f'{hname},{runs_sorted.run_number[i]},{runs_sorted[algorithm_info["score"]][i]},{algorithm}\n')
 
+    csvfile.close()
     # Histogram of sse for algorithms
     splits = {
             "train_label" : [("train", 0), ("test", 1)],
@@ -187,9 +197,15 @@ def main(args):
     # Plots of original/reconstructed histograms
     if args.runs is None:
         random_runs = True
-        selected_runs_idx = numpy.random.choice(len(runs), size=args.n_runs, replace=False)
-        selected_runs = runs.run_number[selected_runs_idx]
-        logger.debug("[assess.py] An explicit list of runs was not given, so we will make plots for %d randomly chosen runs: %s" % (args.n_runs, str(selected_runs)))
+        
+        # we are going to commit war crimes and plot top SSE instead of random
+        runs_sorted = runs[awkward.argsort(runs[algorithm_info["score"]], ascending=False)]
+
+        selected_runs_idx = range(args.n_runs) #numpy.random.choice(len(runs), size=args.n_runs, replace=False)
+        
+
+        selected_runs = runs_sorted.run_number[selected_runs_idx]
+        logger.debug("[assess.py] An explicit list of runs was not given, so we will make plots for top %d runs: %s" % (args.n_runs, str(selected_runs)))
     else:
         random_runs = False
         selected_runs = [int(x) for x in args.runs.split(",")]
@@ -198,7 +214,7 @@ def main(args):
             selected_runs_idx = selected_runs_idx | (runs.run_number == run)
         logger.debug("[assess.py] Will make plots for the %d specified runs: %s" % (len(selected_runs), str(selected_runs)))
 
-    runs_trim = runs[selected_runs_idx]
+    runs_trim = runs_sorted[selected_runs_idx]
     for h, info in histograms.items():
         for i in range(len(runs_trim)):
             run = runs_trim[i]
