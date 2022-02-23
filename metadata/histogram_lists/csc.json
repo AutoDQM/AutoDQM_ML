@@ -11,7 +11,9 @@
         "/Run summary/CSCOfflineMonitor/Segments/hSnhits",
         "/Run summary/CSCOfflineMonitor/Segments/hSGlobalPhi",
         "/Run summary/CSCOfflineMonitor/Segments/hSGlobalTheta",
-        "/Run summary/CSCOfflineMonitor/Segments/hSChiSq"
+        "/Run summary/CSCOfflineMonitor/Segments/hSChiSq",
+        "/Run summary/CSCOfflineMonitor/Digis/hStripNFired",
+        "/Run summary/CSCOfflineMonitor/Digis/hWirenGroupsTotal",
+        "/Run summary/CSCOfflineMonitor/recHits/h_RHnrechits"
     ]
 }
-

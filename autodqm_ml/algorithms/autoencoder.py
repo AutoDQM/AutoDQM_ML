@@ -34,9 +34,9 @@ class AutoEncoder(MLAlgorithm):
                 new = self.__dict__
         )
 
+
     def load_model(self, model_file):
         """
-
         """
         model = keras.models.load_model(model_file)
         return model
@@ -44,13 +44,12 @@ class AutoEncoder(MLAlgorithm):
 
     def save_model(self, model, model_file):
         """
-
         """
         model.save(model_file)
 
+
     def train(self, n_epochs = 1000, batch_size = 128):
         """
-
         """
         model_file = "%s/autoencoder_%s.h5" % (self.output_dir, self.tag)
         if os.path.exists(model_file):
@@ -86,19 +85,26 @@ class AutoEncoder(MLAlgorithm):
         idx = 0
         for histogram, histogram_info in self.histograms.items():
             original_hist = self.df[histogram]
-            reconstructed_hist = awkward.flatten(awkward.from_numpy(pred[idx]), axis = -1) 
+            if len(self.histograms.items()) >= 2:
+                reconstructed_hist = awkward.flatten(awkward.from_numpy(pred[idx]), axis = -1) 
+            else:
+                reconstructed_hist = awkward.flatten(awkward.from_numpy(pred), axis = -1)
 
             sse = awkward.sum(
                     (original_hist - reconstructed_hist) ** 2,
                     axis = -1
             )
 
+            # For 2d histograms, we need to sum over one more axis to get a single SSE score for each run
+            if histogram_info["n_dim"] == 2:
+                sse = awkward.sum(sse, axis = -1)
+
             self.add_prediction(histogram, sse, reconstructed_hist)
             idx += 1
 
+
     def make_inputs(self, split = None):
         """
-
         """
         inputs = {}
         outputs = {}
@@ -124,7 +130,6 @@ class AutoEncoder_DNN(keras.models.Model):
     """
     Model defined through the Keras Model Subclassing API: https://www.tensorflow.org/guide/keras/custom_layers_and_models
     An AutoEncoder instance owns a single AutoEncoder_DNN, which is the actual implementation of the DNN.
-
     """
     def __init__(self, histograms, **kwargs): 
         super(AutoEncoder_DNN, self).__init__()
