@@ -28,9 +28,10 @@ Once `conda` is installed and set up, install dependencies with (warning: this s
 conda env create -f environment.yml -p <path to install conda env>
 ```
 
-One package cannot be installed via `conda` and needs to be installed with `pip` (after activating your `conda` env above):
+Some packages cannot be installed via `conda` or take too long and need to be installed with `pip` (after activating your `conda` env above):
 ```
 pip install yahist
+pip install tensorflow==2.5
 ```
 
 Note: if you are running on `lxplus`, you may run into permissions errors, which may be fixed with:
@@ -41,15 +42,10 @@ and then rerunning the command to create the `conda` env. The resulting `conda e
 
 **3. Install autodqm-ml**
 
-**Users** can install with:
-```
-python setup.py install
-```
-**Developers** are suggested to install with:
+Install with:
 ```
 pip install -e .
 ```
-to avoid rerunning the whole installation every time there is a change.
 
 Once your setup is installed, you can activate your python environment with
 ```

@@ -14,6 +14,6 @@
         "/Run summary/CSCOfflineMonitor/Segments/hSChiSq",
         "/Run summary/CSCOfflineMonitor/Digis/hStripNFired",
         "/Run summary/CSCOfflineMonitor/Digis/hWirenGroupsTotal",
-        "/Run summary/CSCOfflineMonitor/recHits/h_RHnrechits"
+        "/Run summary/CSCOfflineMonitor/recHits/hRHnrechits"
     ]
 }
