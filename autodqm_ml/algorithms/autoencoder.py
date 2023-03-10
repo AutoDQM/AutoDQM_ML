@@ -124,7 +124,9 @@ class AutoEncoder(MLAlgorithm):
                 else:
                     logger.warning("[AutoEncoder : train] A trained AutoEncoder already exists with tag '%s' at file '%s'. We will load the saved model from the file rather than retraining. If you wish to retrain please provide a new tag or delete the old outputs." % (self.tag, model_file))
                     continue
-                    
+
+            print("This is the histogram name in def train")
+            print(histogram)
             inputs, outputs = self.make_inputs(split = "train", histogram_name = histogram)
             inputs_val, outputs_val = self.make_inputs(split = "test", histogram_name = histogram)
 
@@ -132,6 +134,11 @@ class AutoEncoder(MLAlgorithm):
                 hist_name = str(list(self.models.keys()))
             else:
                 hist_name = histogram
+
+            print(self.config["n_components"])
+       	    print(hist_name)
+       	    print(inputs.values())
+       	    print(list(inputs.values()))
             logger.debug("[AutoEncoder : train] Training autoencoder with %d dimensions in latent space for histogram(s) '%s' with %d training examples." % (self.config["n_components"], hist_name, len(list(inputs.values())[0]))) 
 
             if self.mode == "simultaneous":
@@ -140,9 +147,9 @@ class AutoEncoder(MLAlgorithm):
                 histograms = { histogram : self.histograms[histogram] }
 
             if not os.path.exists(model_file):
-                 model = AutoEncoder_DNN(histograms, **self.config).model()
-                 if self.config["overwrite"]:
-                     logger.warning("[AutoEncoder : train] Overwrite has been turned on but no existing model was found with tag '%s' at file '%s'. We will create and train a new model." % (self.tag, model_file))
+                model = AutoEncoder_DNN(histograms, **self.config).model()
+                if self.config["overwrite"]:
+                    logger.warning("[AutoEncoder : train] Overwrite has been turned on but no existing model was found with tag '%s' at file '%s'. We will create and train a new model." % (self.tag, model_file))
             model.summary()
             model.compile(
                     optimizer = keras.optimizers.Adam(learning_rate = self.config["learning_rate"]), 
@@ -164,15 +171,17 @@ class AutoEncoder(MLAlgorithm):
                     epochs = self.config["n_epochs"],
                     batch_size = self.config["batch_size"]
             )
-            if self.stats_output_dir:
-               if not os.path.isdir(self.stats_output_dir):
-                   os.mkdir(self.stats_output_dir)
+
+            stats_output_dir = self.output_dir + "/stats_output"
+            if stats_output_dir:
+               if not os.path.isdir(stats_output_dir):
+                   os.mkdir(stats_output_dir)
                history = pandas.DataFrame(history.history)
                runlabel = 'run_' + datetime.now().strftime('%H%M%S%m%d')
-               logger.info("[AutoEncoder : train] Saving training statistics in '%s'." % (self.stats_output_dir))
-               history.to_csv(self.stats_output_dir + runlabel + '_history.csv')
-               history.to_parquet(self.stats_output_dir + runlabel + '_history.parquet')
-               make_training_plots(history, histogram, self.stats_output_dir + runlabel + '_plots.png')
+               logger.info("[AutoEncoder : train] Saving training statistics in '%s'." % (stats_output_dir))
+               history.to_csv(stats_output_dir + runlabel + '_history.csv')
+               history.to_parquet(stats_output_dir + runlabel + '_history.parquet')
+               make_training_plots(history, histogram, stats_output_dir + runlabel + '_plots.png')
                
 
              
@@ -220,9 +229,12 @@ class AutoEncoder(MLAlgorithm):
             if histogram_name is not None: # self.mode == "individual", i.e. separate autoencoder for each histogram
                 if not histogram == histogram_name: # only grab the relevant histogram for this autoencoder
                     continue
-            if 'CSC' in histogram_name:
+            print("Here's the hists, histogram_name and histogram")
+            print(histogram_name)
+            print(histogram)
+            if 'CSC' in histogram:
                 label_field = 'CSC_label'
-            elif 'emtf' in histogram_name:
+            elif 'emtf' in histogram:
                 label_field = 'EMTF_label'
             else:
                 label_field = None
@@ -235,12 +247,12 @@ class AutoEncoder(MLAlgorithm):
                     message = ('[AutoEncoder : train] Histogram %s is labeled. %i/%i anomalous runs have been removed from the train set.'% (histogram_name, numpy.sum([self.df.train_label[i] == 1 and self.df[label_field][i] == kANOMALOUS for i in range(len(self.df))]),  numpy.sum([self.df.train_label[i] == 1 for i in range(len(self.df))])))
                     cut = [self.df.train_label[i] == 1 and self.df[label_field][i] == kGOOD for i in range(len(self.df))]
                 elif split == "all":
-                    message = ("Data for Histogram %s is labeled, however, 'all' was selected, so all will be used in paritioning" % (histogram_name))
+                    message = ("Data for Histogram %s is labeled, however, 'all' was selected, so all will be used in partitioning" % (histogram_name))
                     cut = self.df.run_number >= 0
                 else:
                     cut = self.df[label_field] == kGOOD 
             else:
-                logger.debug("[AutoEncoder : train] Histogram %s is has no labels, so all will be utiliezed in splitting.")
+                logger.debug("[AutoEncoder : train] Histogram %s has no labels, so all will be utilized in splitting." % (histogram_name))
                 if split == "train":
                     cut = self.df.train_label == 0
                 elif split == "test":
@@ -388,7 +400,7 @@ class AutoEncoder_DNN():
                     layer = keras.layers.Conv1DTranspose(
                             filters = n_filters,
                             kernel_size = self.kernel_1d,
-                            strides = self.self.strides_1d,
+                            strides = self.strides_1d,
                             padding = "same",            
                             activation = activation,
                             name = name 

@@ -99,6 +99,7 @@ class PCA(MLAlgorithm):
         :return: a 1d histogram (flattened if originally a 2d histogram)
         :rtype: awkward.Array
         """
+        print(histogram)
         if 'CSC' in histogram:
             label_field = 'CSC_label'
         elif 'emtf' in histogram:
@@ -106,6 +107,7 @@ class PCA(MLAlgorithm):
         else:
             label_field = None
 
+        print(self.df)
         if label_field and len(numpy.unique(self.df[label_field])) > 1: #Don't Include Anomalous Runs in Training
            if split == "train":
                cut = [self.df.train_label[i] == 0 and self.df[label_field][i] == kGOOD for i in range(len(self.df))]

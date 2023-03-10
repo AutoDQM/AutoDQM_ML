@@ -148,14 +148,20 @@ def main(args):
             stats['algo'].append(algorithm)
             stats['avg_an_score'].append(awkward.mean(runs[algorithm_info["score"]]))
             stats['std_an_score'].append(awkward.std(runs[algorithm_info["score"]]))
+            label_field = 'new_label'
             if 'CSC' in h:
                 label_field = 'CSC_label'
             elif 'emtf' in h:
                 label_field = 'EMTF_label'
+            #else:
+            #    label_field = None
+            #print(runs)
+            #print(runs['label'])
+            #print(runs['label_field'])
             if len(numpy.unique(runs[label_field])) > 1:
-               score_hist_data['algo'].append(algorithm)
-               score_hist_data['score'].append(runs[algorithm_info["score"]][runs[label_field] == 0])
-               score_hist_data['bad'].append(runs[algorithm_info["score"]][runs[label_field] == 1])
+                score_hist_data['algo'].append(algorithm)
+                score_hist_data['score'].append(runs[algorithm_info["score"]][runs[label_field] == 0])
+                score_hist_data['bad'].append(runs[algorithm_info["score"]][runs[label_field] == 1])
         if not os.path.isdir(args.output_dir + "/" + h.replace("/", "").replace(" ", "") + "/"):
             os.mkdir(args.output_dir + "/" + h.replace("/", "").replace(" ", "") + "/")
         if len(score_hist_data['algo']) != 0:
@@ -223,7 +229,7 @@ def main(args):
             save_name = args.output_dir + "/" + h_name + "/roc.pdf"
             plot_roc_curve(h_name, roc_results[h], save_name)
             plot_roc_curve(h_name, roc_results[h], save_name.replace(".pdf", "_log.pdf"), log = True)
-            print_eff_table(h_name, roc_results[h])
+            #print_eff_table(h_name, roc_results[h])
             
 
     # Plots of original/reconstructed histograms
