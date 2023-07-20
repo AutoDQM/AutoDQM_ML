@@ -31,9 +31,9 @@ class Histogram():
             logger.exception(message)
             raise ValueError(message)
 
-        self.n_entries = numpy.sum(self.data) 
+        self.n_entries = numpy.sum(self.data)
         self.is_normalized = False
-   
+
 
     def normalize(self):
         """
@@ -47,11 +47,11 @@ class Histogram():
             #logger.warning(message)
             return
 
-        self.data = self.data / float(self.n_entries)
+        self.data = self.data #/ float(self.n_entries)
         self.is_normalized = True
 
     def clean(self):
         """
-        
+
         """
         pass

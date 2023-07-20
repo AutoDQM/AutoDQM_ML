@@ -36,7 +36,7 @@ class PCA(MLAlgorithm):
 
         :param model_file: folder containing PCA pickles
         :type model_file: str
-        
+
         """
         with open(model_file, "r") as f_in:
             pcaParams = json.load(f_in)
@@ -75,14 +75,14 @@ class PCA(MLAlgorithm):
                 'singular_values_' : pca.singular_values_.tolist(),
                 'mean_' : pca.mean_.tolist(),
                 'n_components_' : pca.n_components_,
-                'n_features_' : pca.n_features_, 
-                'n_samples_' : pca.n_samples_, 
+                'n_features_' : pca.n_features_,
+                'n_samples_' : pca.n_samples_,
                 'noise_variance_' : pca.noise_variance_
         }
 
         with open(model_file, "w") as f_out:
-            json.dump(pcaParams, f_out, indent = 4, sort_keys = True)       
- 
+            json.dump(pcaParams, f_out, indent = 4, sort_keys = True)
+
 
     def get_histogram(self, histogram, split = "all"):
         """
@@ -98,6 +98,19 @@ class PCA(MLAlgorithm):
 
         if split == "train":
             runs = self.df[self.df.train_label == 0]
+            ## choose only high stat run for training
+            cut = runs.run_number > 0 # dummy all True cut
+            for histogram, histogram_info in self.histograms.items():
+                n_entries = awkward.sum(runs[histogram], axis = -1)
+                if histogram_info["n_dim"] == 2:
+                    n_entries = awkward.sum(n_entries, axis = -1)
+                print('n_entires: ', n_entries)
+                cut = cut & (n_entries >= self.low_stat_threshold)
+            print('------------------------------')
+            print(len(runs))
+            runs = runs[cut]
+            print(len(runs))
+            print('----------------------------')
         elif split == "test":
             runs = self.df[self.df.train_label == 1]
         elif split == "all":
@@ -119,7 +132,7 @@ class PCA(MLAlgorithm):
 
     def train(self):
         """
-        Trains new PCA models using loaded data. Must call pca.load_data() before training. 
+        Trains new PCA models using loaded data. Must call pca.load_data() before training.
         """
 
         self.model = {}
@@ -135,31 +148,31 @@ class PCA(MLAlgorithm):
                     n_components = self.n_components,
                     random_state = 0, # fixed for reproducibility
             )
-            
-            input = self.get_histogram(histogram, split = "train") 
+
+            input = self.get_histogram(histogram, split = "train")
 
             logger.debug("[PCA : train] Training PCA with %d principal components for histogram '%s' with %d training examples." % (self.n_components, histogram, len(input)))
 
             pca.fit(input)
             self.model[histogram] = pca
-            
+
             self.save_model(pca, model_file)
 
-    
+
     def predict(self):
         """
 
         """
         for histogram, histogram_info in self.histograms.items():
             pca = self.model[histogram]
-            
+
             # Grab the original histograms and transform to latent space
-            original_hist = self.get_histogram(histogram, split = "all") 
+            original_hist = self.get_histogram(histogram, split = "all")
             original_hist_transformed = pca.transform(original_hist)
 
             # Reconstruct histogram from latent space representation
             reconstructed_hist = pca.inverse_transform(original_hist_transformed)
-            
+
             # Calculate sse
             sse = awkward.sum(
                     (original_hist - reconstructed_hist) ** 2,
@@ -167,4 +180,3 @@ class PCA(MLAlgorithm):
             )
 
             self.add_prediction(histogram, sse, reconstructed_hist)
-

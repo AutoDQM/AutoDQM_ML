@@ -19,10 +19,11 @@ class StatisticalTester(AnomalyDetectionAlgorithm):
 
     def predict(self):
         if self.reference is None:
+            ## !!! TODO: choose a high stat ref run isntead of just first
             self.reference = self.df.run_number[0]
             logger.warning("[StatisticalTester : predict] No reference run was provided, will use the first run in the df (%d) as the reference." % (self.reference))
-        
-        self.reference_hists = self.df[self.df.run_number == self.reference][0] 
+
+        self.reference_hists = self.df[self.df.run_number == self.reference][0]
 
         for histogram, info in self.histograms.items():
             score = numpy.zeros(len(self.df))
@@ -43,8 +44,8 @@ class StatisticalTester(AnomalyDetectionAlgorithm):
         """
 
         score, p_value = ks_2samp(
-                numpy.array(target), 
-                numpy.array(reference) 
+                numpy.array(target),
+                numpy.array(reference)
         )
 
         return score, p_value
