@@ -148,20 +148,11 @@ def main(args):
             stats['algo'].append(algorithm)
             stats['avg_an_score'].append(awkward.mean(runs[algorithm_info["score"]]))
             stats['std_an_score'].append(awkward.std(runs[algorithm_info["score"]]))
-            label_field = 'new_label'
-            if 'CSC' in h:
-                label_field = 'CSC_label'
-            elif 'emtf' in h:
-                label_field = 'EMTF_label'
-            #else:
-            #    label_field = None
-            #print(runs)
-            #print(runs['label'])
-            #print(runs['label_field'])
-            if len(numpy.unique(runs[label_field])) > 1:
+
+            if len(numpy.unique(runs['label'])) > 1:
                 score_hist_data['algo'].append(algorithm)
-                score_hist_data['score'].append(runs[algorithm_info["score"]][runs[label_field] == 0])
-                score_hist_data['bad'].append(runs[algorithm_info["score"]][runs[label_field] == 1])
+                score_hist_data['score'].append(runs[algorithm_info["score"]][runs['label'] == 0])
+                score_hist_data['bad'].append(runs[algorithm_info["score"]][runs['label'] == 1])
         if not os.path.isdir(args.output_dir + "/" + h.replace("/", "").replace(" ", "") + "/"):
             os.mkdir(args.output_dir + "/" + h.replace("/", "").replace(" ", "") + "/")
         if len(score_hist_data['algo']) != 0:
@@ -171,16 +162,12 @@ def main(args):
             "train_label" : [("train", 0), ("test", 1)],
             "label" : [("anomalous", kANOMALOUS), ("good", kGOOD)]
     }
-    
+    print(histograms)
     for h, info in histograms.items():
         for split, split_info in splits.items():
             recos_by_label = { k : {} for k,v in info["algorithms"].items() }
             for name, id in split_info:
-                if 'CSC' in h:
-                    label_field = 'CSC_label'
-                elif 'emtf' in h:
-                    label_field = 'EMTF_label'
-                runs_set = runs[runs[label_field] == id]
+                runs_set = runs[runs[split] == id]
                 if len(runs_set) == 0:
                     logger.warning("[assess.py] For histogram '%s', no runs belong to the set '%s', skipping making a histogram of SSE for this." % (h, name))
                     continue
@@ -191,6 +178,8 @@ def main(args):
 
                 h_name = h.replace("/", "").replace(" ", "")
                 save_name = args.output_dir + "/" + h_name + "/sse_%s_%s.pdf" % (split, name)
+                print(h_name)
+                print(recos)
                 make_sse_plot(h_name, recos, save_name)
 
             for algorithm, recos_alg in recos_by_label.items():
@@ -203,12 +192,9 @@ def main(args):
     has_labeled_runs = {h:True for h in histograms}
     labeled_runs_cut = {h:runs.run_number < 0 for h in histograms}
     for h, info in histograms.items():
-        if 'CSC' in h:
-            label_field = 'CSC_label'
-        elif 'emtf' in h:
-            label_field = 'EMTF_label'
         for name, id in splits["label"]:
-            cut = runs[label_field] == id
+            print(id)
+            cut = runs['label'] == id
             labeled_runs_cut[h] = labeled_runs_cut[h] | cut
             runs_set = runs[cut]
             has_labeled_runs[h] = has_labeled_runs[h] and (len(runs_set) > 0)
@@ -217,13 +203,9 @@ def main(args):
         if has_labeled_runs[h]:
             labeled_runs = runs[labeled_runs_cut[h]]
             roc_results[h] = {}
-            if 'CSC' in h:
-                label_field = 'CSC_label'
-            elif 'emtf' in h:
-                label_field = 'EMTF_label'
             for algorithm, algorithm_info in info["algorithms"].items():
                 pred = labeled_runs[algorithm_info["score"]]
-                roc_results[h][algorithm] = calc_roc_and_unc(labeled_runs[label_field], pred)
+                roc_results[h][algorithm] = calc_roc_and_unc(labeled_runs['label'], pred)
 
             h_name = h.replace("/", "").replace(" ", "")
             save_name = args.output_dir + "/" + h_name + "/roc.pdf"
