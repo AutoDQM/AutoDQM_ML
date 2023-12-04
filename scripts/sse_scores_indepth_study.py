@@ -73,6 +73,7 @@ def main(args):
 
   sse_df = sse_df.loc[:,~sse_df.columns.duplicated()].copy()
   hist_cols = [col for col in sse_df.columns if '_score_' in col]
+  print(len(hist_cols))
   hist_dict = {each_hist: "max" for each_hist in hist_cols}
 
   sse_df = sse_df.groupby(['run_number','label'])[hist_cols].agg(hist_dict).reset_index()
@@ -83,6 +84,9 @@ def main(args):
   sse_df_bad = sse_df.loc[sse_df['label'] == 1].reset_index()
   sse_df_good = sse_df_good[['run_number'] + hist_cols]
   sse_df_bad = sse_df_bad[['run_number'] + hist_cols]
+
+  print(len(sse_df_good.columns))
+  print(len(sse_df_bad.columns))
 
   # new threshold cut-offs per Si's recommendations
   # 0th cut-off at 1st highest SSE + (1st - 2nd highest)*0.5
@@ -139,10 +143,6 @@ def main(args):
   # for each threshold, find number of sse scores above this for each hist and matching hist threshold per 265 runs, for each of good and bad run df
   # sum across runs and divide by number of runs
 
-  # point at which sum of flags across runs is equal to 1.5 * #runs
-  # PCA
-  # AE
- 
   #thresholds_mh = [1.33880645e-06,3.70879538e-06,2.07432838e-04,2.66117342e-04,1.53229424e-04,1.50588933e-04,7.60579091e-05,2.56020621e-04,7.17893025e-04,7.51130839e-04,7.71975298e-05,1.21253016e-03,1.73886274e-04,4.68996706e-03,2.82594840e-05,4.29786637e-04,1.87090182e-04,1.22143826e-03,2.29235532e-04,2.26782300e-04,1.70092400e-04,1.90973911e-04,1.95007126e-04,2.04282311e-04,2.13468611e-04,1.69465104e-04,3.49285997e-04,1.69873415e-04,3.38607530e-04,6.96611175e-04,9.32676717e-04,1.10394778e-03,6.60170297e-04,6.76419962e-04,1.22298216e-03,1.10916584e-03,2.34616131e-04,4.75172915e-05,5.57723951e-02,5.29767061e-02,6.71458421e-03,8.19580717e-03,3.56364660e-03,4.33776876e-03,1.21058412e-02,1.42543040e-02,3.26262834e-02,3.79098123e-02,4.55855036e-02,5.45623678e-02,5.32348925e-03,3.60698042e-03,5.95885243e-03,4.54829651e-03,1.28365046e-02,1.00816028e-02,1.42640427e-02,1.16641336e-02,1.82043639e-02,1.58835050e-02,1.91096728e-02,1.83462891e-02]
   thresholds_mh = [0.00034324,0.00092252,0.01413556,0.00108673,0.00024861,0.00041836,0.00039845,0.00313177,0.00319687,0.00420914,0.00029102,0.02245633,0.00031072,0.02519195,0.00016806,0.0283848,0.00031453,0.00689271,0.00224029,0.00390414,0.02686999,0.0136855,0.00024362,0.01378011,0.00026005,0.02457584,0.00042429,0.02856238,0.00039182,0.00471469,0.0013788,0.00123662,0.00692726,0.00245624,0.0012641,0.00114116,0.00042045,0.00016676,0.07696494,0.06275035,0.00830455,0.00974406,0.00384988,0.00623181,0.01425515,0.015748,0.03580804,0.0394197,0.05351183,0.06638868,0.00622217,0.0039951,0.00663571,0.00499496,0.01498416,0.01172696,0.01673972,0.01377621,0.02252843,0.01897173,0.0216591,0.02035667]
   #thresholds_fr = [1.21923653e-06,3.39235805e-06,1.46611637e-04,1.86651626e-04,1.34228888e-04,1.34414060e-04,5.52984813e-05,2.04392598e-04,5.91147559e-04,6.57175545e-04,6.21854772e-05,1.09874233e-03,1.38764334e-04,3.04778903e-03,2.05674547e-05,3.20099752e-04,1.59766659e-04,9.72542278e-04,1.76607148e-04,1.71897154e-04,1.39978724e-04,1.52245923e-04,1.37982468e-04,1.43233418e-04,1.50150669e-04,1.28892336e-04,2.56956056e-04,1.31040269e-04,2.43951748e-04,5.71627414e-04,8.59285632e-04,9.21611290e-04,3.72258677e-04,5.72983971e-04,9.82457296e-04,9.82599023e-04,1.98513105e-04,3.86858372e-05,3.84118727e-02,4.27476439e-02,5.76547988e-03,6.60202868e-03,3.03147035e-03,3.33583893e-03,9.41221220e-03,1.21282967e-02,2.44694405e-02,3.21343906e-02,3.70272178e-02,4.99990694e-02,4.28180460e-03,3.04120583e-03,4.82706018e-03,3.27151354e-03,9.19279936e-03,7.68303605e-03,1.11989272e-02,9.55544609e-03,1.39589441e-02,1.34185967e-02,1.65757293e-02,1.60363727e-02]
@@ -151,26 +151,25 @@ def main(args):
   result_data_fr = {'Histogram': [], 'FR': []}
 
 
-
-  for column, threshold in zip(sse_df.columns[3:], thresholds_mh):
+  for column, threshold in zip(sse_df_bad.columns[1:], thresholds_mh):
     graph_name = column
-    threshold_count = (sse_df[column] > threshold).sum()
+    threshold_count = (sse_df_bad[column] > threshold).sum()
     result_data_mh['Histogram'].append(graph_name)
     result_data_mh['MH'].append(threshold_count)
 
   result_df_mh = pd.DataFrame(result_data_mh)
   print(result_df_mh)
 
-  for column, threshold in zip(sse_df.columns[3:], thresholds_fr):
+  for column, threshold in zip(sse_df_bad.columns[1:], thresholds_fr):
     graph_name = column
-    threshold_count = (sse_df[column] > threshold).sum()
+    threshold_count = (sse_df_bad[column] > threshold).sum()
     result_data_fr['Histogram'].append(graph_name)
     result_data_fr['FR'].append(threshold_count)
 
   result_df_fr = pd.DataFrame(result_data_fr)
   result_df = pd.merge(result_df_mh, result_df_fr, on='Histogram')
 
-  result_df.to_csv('./hist_flag_freq_ae.csv', index=False)
+  result_df.to_csv('./hist_flag_freq_bad_runs_ae.csv', index=False)
 
 
   index_mh1p5 = find_closest_index(tMHF_ROC_good_X, 1.5)
@@ -195,7 +194,7 @@ def main(args):
 
   plt.tight_layout()
 
-  plt.show()
+  #plt.show()
 
 
 if __name__ == "__main__":
