@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt 
-import numpy as np 
+import matplotlib.pyplot as plt
+import numpy as np
 from pathlib import Path
 import awkward
 import os
@@ -24,7 +24,7 @@ def make_sse_plot(name, recos, save_name, **kwargs):
     all = awkward.concatenate([x["score"] for k, x in recos.items()])
     h_all = Hist1D(all)
     bins = h_all.edges
-    
+
     hists = []
 
     for reco, info in recos.items():
@@ -50,7 +50,7 @@ def make_sse_plot(name, recos, save_name, **kwargs):
     plt.clf()
 
 
-def make_original_vs_reconstructed_plot(name, original, recos, run, save_name, hist_layout, **kwargs): 
+def make_original_vs_reconstructed_plot(name, original, recos, run, save_name, hist_layout, **kwargs):
     n_dim = len(np.array(original).shape)
 
     if n_dim == 1:
@@ -65,7 +65,7 @@ def make_original_vs_reconstructed_plot(name, original, recos, run, save_name, h
                           "reco" : awkward.flatten(reco["reco"], axis = -1),
                           "score" : reco["score"]
                 }
-            make_original_vs_reconstructed_plot1d(name, original_flat, recos_flat, run, save_name, **kwargs)     
+            make_original_vs_reconstructed_plot1d(name, original_flat, recos_flat, run, save_name, **kwargs)
         elif hist_layout == '2d':
             make_original_vs_reconstructed_plot2d(name, original, recos, run, save_name, **kwargs)
         else:
@@ -82,14 +82,14 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, run, save_name,
     bins = "%s, 0, 1" % (len(original))
     x_label = name + " (a.u.)"
     y_label = "Fraction of events"
-    
+
     rat_lim = kwargs.get("rat_lim", [0.0, 2.0])
     log_y = kwargs.get("log_y", False)
 
     h_orig = Hist1D(original, bins = bins, label = "original")
     h_orig._counts = original
     h_reco = []
-   
+
     for reco, info in recos.items():
         h = Hist1D(info["reco"], bins = bins, label = "%s [sse : %.2E]" % (reco, info["score"]))
         h._counts = info["reco"]
@@ -124,72 +124,53 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, run, save_name,
     plt.clf()
 
 def make_original_vs_reconstructed_plot2d(name, original, recos, run, save_name, **kwargs):
-    x_label = name + " (a.u.)"
-    y_label = "Fraction of events"
     extent = (0, 1, 0, 1)
     color_map = plt.cm.Purples
-    rat_lim = kwargs.get("rat_lim", [0.0, 2.0])
     log_y = kwargs.get("log_y", False)
     h_reco = []
     labels = []
     base_vmax = awkward.max(original)
     base_vmin = awkward.min(original)
-    ratio_vmax = -10
-    ratio_vmin = 10
-    ratios = []
+    original_flatten = awkward.flatten(original)
     for reco, info in recos.items():
         h_reco.append(info["reco"])
-        ratio = np.abs(info["reco"] - original)
-        ratios.append(ratio)
         base_vmax = np.max((base_vmax, awkward.max(info["reco"])))
         base_vmin = np.min((base_vmin, awkward.min(info["reco"])))
-        ratio_vmax = np.max((ratio_vmax, awkward.max(ratio)))
-        ratio_vmin = np.min((ratio_vmin, awkward.min(ratio)))
         labels.append("%s [sse : %.2E]" % (reco, info["score"]))
-    
-    fig, axes = plt.subplots(2, len(h_reco) + 1, figsize=(5 + len(h_reco)*5, 6), gridspec_kw=dict(height_ratios=[3, 1]), sharey = True, sharex=True)
-     
+
+    fig, axes = plt.subplots(figsize=(5 + len(h_reco)*5, 6))
+
     if log_y:
         base_norm = colors.LogNorm(base_vmin, base_vmax)
-        ratio_norm = colors.LogNorm(ratio_vmin, ratio_vmax)
     else:
         base_norm = colors.Normalize(base_vmin, base_vmax)
-        ratio_norm = colors.Normalize(ratio_vmin, ratio_vmax)
-    #plt.grid()
-    axes[0][0].imshow(original, norm=base_norm, cmap=color_map, extent = extent, aspect = 'auto')
-    axes[0][0].set_title("Original")
-    #plt.colorbar(mesh, ax = axes[0][0])
-    axes[0][0].grid()
+
+
+    axes.imshow(np.array(original), norm=base_norm, cmap=color_map, extent = extent, aspect = 'auto')
+    axes.grid()
+
     for idx, h in enumerate(h_reco):
         if idx == len(h_reco) - 1:
-            pos = axes[0][idx+1].imshow(h, norm=base_norm, cmap=color_map, extent = extent, aspect = 'auto')
-            cax = axes[0][idx+1].inset_axes([1.1, 0, 0.1, 1])
-            plt.colorbar(pos, cax = cax, ax = axes[0][idx+1])
-            pos = axes[1][idx+1].imshow(ratios[idx], norm=ratio_norm, cmap=color_map, extent = extent, aspect = 'auto')
-            cax = axes[1][idx+1].inset_axes([1.1, 0, 0.1, 1])
-            plt.colorbar(pos, cax = cax, ax = axes[1][idx+1])
-        else:
-            pos = axes[0][idx+1].imshow(h, norm=base_norm, cmap=color_map, extent = extent, aspect = 'auto')
-            pos = axes[1][idx+1].imshow(ratios[idx], norm=ratio_norm, cmap=color_map, extent = extent, aspect = 'auto')
-        axes[0][idx+1].set_title(labels[idx])
-        axes[0][idx+1].grid()
-        axes[1][idx+1].grid()
-    axes[1][0].remove()
-    axes[0][0].set_ylabel(y_label)
-    axes[1][1].set_ylabel("ML Reco - Original")
-    axes[0][0].set_xlabel(x_label)
+            counts = awkward.num(original)
+            hplot = np.array(awkward.unflatten(h, counts))
+            pos = axes.imshow(hplot , norm=base_norm, cmap=color_map, extent = extent, aspect = 'auto')
+            cax = axes.inset_axes([1.1, 0, 0.1, 1])
+            plt.colorbar(pos, cax = cax, ax = axes)
+            cax = axes.inset_axes([1.1, 0, 0.1, 1])
+            plt.colorbar(pos, cax = cax, ax = axes)
+    axes.set_title(labels[idx])
 
 
     logger.debug("[plot_tools.py : make_original_vs_reconstructed_plot1d] Writing plot to file '%s'. " % (save_name))
     plt.savefig(save_name, bbox_inches='tight')
     plt.savefig(save_name.replace(".pdf", ".png"), bbox_inches='tight')
     plt.clf()
-    
-def plot1D(original_hist, reconstructed_hist, run, hist_path, algo, threshold):    
-    """
-    plots given original and recontructed histogram. Will plot the MSE plot if the SSE is over the threshold. 
 
-    :param original_hist: original histogram to be plotted  
+def plot1D(original_hist, reconstructed_hist, run, hist_path, algo, threshold):
+    """
+    plots given original and recontructed histogram. Will plot the MSE plot if the SSE is over the threshold.
+
+    :param original_hist: original histogram to be plotted
     :type original_hist: numpy array of shape (n, )
     :param reconstructed_hist: reconstructed histogram from the ML algorithm
     :type reconstructed_hist: numpy array of shape (n, )
@@ -202,11 +183,11 @@ def plot1D(original_hist, reconstructed_hist, run, hist_path, algo, threshold):
     """
     fig, ax = plt.subplots()
     mse = np.mean(np.square(original_hist - reconstructed_hist))
-    
+
     # for bin edges
     binEdges = np.linspace(0, 1, original_hist.shape[0])
     width = binEdges[1] - binEdges[0]
-    # plot original/recon 
+    # plot original/recon
     ax.bar(binEdges, original_hist, alpha=0.5, label='original', width=width)
     ax.bar(binEdges, reconstructed_hist, alpha=0.5, label='reconstructed', width=width)
     plotname = hist_path.split('/')[-1]
@@ -221,21 +202,21 @@ def plot1D(original_hist, reconstructed_hist, run, hist_path, algo, threshold):
     Path(f'plots/{algo}/{run}').mkdir(parents=True, exist_ok=True)
     fig.savefig(f'plots/{algo}/{run}/{plotname}.png')
     plt.close('all')
-    
-    if mse > threshold: 
+
+    if mse > threshold:
         fig2, ax2 = plt.subplots()
         ax2.bar(binEdges, np.square(original_hist - reconstructed_hist), alpha=0.5, width=width)
         ax2.set_title(f'MSE {plotname} {run}')
         fig2.savefig(f'plots/{algo}/{run}/{plotname}-MSE.png')
         plt.close('all')
-    
 
-def plotMSESummary(original_hists, reconstructed_hists, threshold, hist_paths, runs, algo): 
-    """ 
+
+def plotMSESummary(original_hists, reconstructed_hists, threshold, hist_paths, runs, algo):
+    """
     Plots all the MSE on one plot that also shows how many passese threhold
-    
 
-    :param original_hist: original histogram to be plotted  
+
+    :param original_hist: original histogram to be plotted
     :type original_hist: numpy array of shape (n, )
     :param reconstructed_hist: reconstructed histogram from the ML algorithm
     :type reconstructed_hist: numpy array of shape (n, )
@@ -243,31 +224,31 @@ def plotMSESummary(original_hists, reconstructed_hists, threshold, hist_paths, r
     :type threshold: int
     :param hist_path: list of name of histograms
     :type hist_path: list
-    :param runs: list of runs used for testing. Must be same as list passed into the pca or autoencoder.plot function 
+    :param runs: list of runs used for testing. Must be same as list passed into the pca or autoencoder.plot function
     :param type: list
     :param algo: name of algorithm used. This is used to place the plot in the correct folder. Can use self.name to be consistent between this and plot1D
     :param type: str
 
-    """ 
+    """
     ## convert to awkward array as not all hists have the same length
     original_hists = awkward.Array(original_hists)
     reconstructed_hists = awkward.Array(reconstructed_hists)
-    
+
     fig, ax = plt.subplots()
     mse = np.mean(np.square(original_hists - reconstructed_hists), axis=1)
-    
+
     ## count number of good and bad histogrms
     num_good_hists = np.count_nonzero(mse < threshold)
     num_bad_hists = np.count_nonzero(mse > threshold)
-    
+
     ## get names of top 5 highest mse histograms
     ## plot_names[argsort[-1]] should be the highest mse histogram
     sortIdx = np.argsort(mse)
 
     hist,_, _ = ax.hist(mse)
-    ax.set_xlabel('MSE values') 
+    ax.set_xlabel('MSE values')
     ax.set_title('Summary of all MSE values')
-    
+
     numHistText = [f'num good hists: {num_good_hists}', f'num bad hists: {num_bad_hists}']
     ## mse summary is for all plots in all runs, so need to make names accordingly
     hist_names = [hist_path.split('/')[-1] for hist_path in hist_paths]
@@ -283,7 +264,7 @@ def plotMSESummary(original_hists, reconstructed_hists, threshold, hist_paths, r
     )
     props = dict(boxstyle='round', facecolor='white', alpha=0.5)
     ax.text(1.1*max(mse), 0.5*max(hist), text, wrap=True, bbox=props)
-    
+
     fig.savefig(f'plots/{algo}/MSE_Summary.png', bbox_inches='tight')
 
 
@@ -331,7 +312,7 @@ def plot_roc_curve(h_name, results, save_name, **kwargs):
     plt.clf()
 
 def plot_rescaled_score_hist(data, hist, savename):
-    
+
     fig, axes = plt.subplots(len(data['score']), 1, figsize = (12, 4*len(data['score'])))
     if len(data['score']) == 1:
         axes = [axes]
@@ -357,13 +338,13 @@ def plot_rescaled_score_hist(data, hist, savename):
             if i == 0:
                badax.set_ylabel('Anomalous Runs')
             badax.spines['right'].set_color('tab:orange')
-            badax.set_xscale('log')    
+            badax.set_xscale('log')
     fig.suptitle(hist)
     axes[0].legend()
     axes[0].set_title('Min-Max Scaled Anomaly Scores')
     fig.savefig(savename, bbox_inches = 'tight')
     fig.savefig(savename.replace('.png', '.pdf'), bbox_inches = 'tight')
-    
+
 def make_training_plots(history, hist, save_file):
         epochs = range(len(history['loss']))
         print(len(history.columns))
@@ -458,7 +439,7 @@ def multi_exp_bar_plots(paths, xlabel, title, legend = None):
         savepath = savepath[:str.rindex(savepath, '/')] + '/' + filename + '_plots.png'
         print(savepath)
     else:
-        
+
         make_one_var_exp_bar_plots(paths, xlabel, axes, 0, b, s, 1, legend[0])
         plt.savefig(paths + 'plots.png', bbox_inches = 'tight')
 
