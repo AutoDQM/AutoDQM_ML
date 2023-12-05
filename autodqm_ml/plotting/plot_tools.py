@@ -146,7 +146,7 @@ def make_original_vs_reconstructed_plot2d(name, original, recos, run, save_name,
         base_norm = colors.Normalize(base_vmin, base_vmax)
 
 
-    axes.imshow(np.array(original), norm=base_norm, cmap=color_map, extent = extent, aspect = 'auto')
+    #@ axes.imshow(np.array(original), norm=base_norm, cmap=color_map, extent = extent, aspect = 'auto')
     axes.grid()
 
     for idx, h in enumerate(h_reco):
@@ -158,7 +158,7 @@ def make_original_vs_reconstructed_plot2d(name, original, recos, run, save_name,
             plt.colorbar(pos, cax = cax, ax = axes)
             cax = axes.inset_axes([1.1, 0, 0.1, 1])
             plt.colorbar(pos, cax = cax, ax = axes)
-    axes.set_title(labels[idx])
+    axes.set_title(f'{name}, {labels[idx]}')#labels[idx])
 
 
     logger.debug("[plot_tools.py : make_original_vs_reconstructed_plot1d] Writing plot to file '%s'. " % (save_name))
