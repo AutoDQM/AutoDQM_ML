@@ -15,6 +15,7 @@ import sys
 import json
 import argparse
 import awkward
+from tqdm import tqdm
 
 from autodqm_ml.utils import expand_path
 from autodqm_ml.constants import kANOMALOUS, kGOOD
@@ -68,7 +69,9 @@ def main(args):
   with open(args.output_dir + '/commands_sse_scores_to_roc.txt', 'w') as f:
     for arg in arguments:
       f.write(arg + ' ')
-
+      
+  print("--------------------------------")
+  print('[1/5] Reading files...')
   sse_df = pd.read_csv(args.input_file)
   algorithm_name = str(sse_df['algo'].iloc[0]).upper()
   if algorithm_name == "BETAB": algorithm_name = "Beta_Binomial"
@@ -86,13 +89,14 @@ def main(args):
   sse_df_bad = sse_df.loc[sse_df['label'] == 1].reset_index()
   sse_df_good = sse_df_good[['run_number'] + hist_cols]
   sse_df_bad = sse_df_bad[['run_number'] + hist_cols]
-
+  
+  print("[2/5] Iterating through histogram columns:")
   # new threshold cut-offs per Si's recommendations
   # 0th cut-off at 1st highest SSE + (1st - 2nd highest)*0.5
   # 1st cut-off at mean<1st, 2nd> highest SSE
   # Nth cut-off at mean<Nth, N+1th> highest SSE
   cutoffs_across_hists = []
-  for histogram in hist_cols:
+  for histogram in tqdm(hist_cols):
     sse_ordered = sorted(sse_df_good[histogram], reverse=True)
     cutoff_0 = sse_ordered[0] + 0.5*(sse_ordered[0] - sse_ordered[1])
     cutoff_thresholds = []
@@ -101,17 +105,19 @@ def main(args):
       cutoff_ii = 0.5*(sse_ordered[ii]+sse_ordered[ii+1])
       cutoff_thresholds.append(cutoff_ii)
     cutoffs_across_hists.append(cutoff_thresholds)
-
+   
   cutoffs_across_hists = np.array(cutoffs_across_hists)
 
   N_bad_hists = [5,3,1]
   tFRF_ROC_good_X = []
   tFRF_ROC_bad_Y = []
 
-  for nbh_ii in N_bad_hists:
+  print(f'[3/5] Iterating through N_bad_hists ({len(N_bad_hists)}):')
+  for idx, nbh_ii in enumerate(N_bad_hists):
+    print(f'+++++[{idx+1}/{len(N_bad_hists)}] - N={nbh_ii}:')
     tFRF_ROC_good_X_init = []
     tFRF_ROC_bad_Y_init = []
-    for cutoff_index in range(len(cutoffs_across_hists[0,:])):
+    for cutoff_index in tqdm(range(len(cutoffs_across_hists[0,:]))):
       t_cutoff_index_g_FRF_rc = count_fraction_runs_above(sse_df_good, cutoffs_across_hists[:,cutoff_index], nbh_ii)
       t_cutoff_index_b_FRF_rc = count_fraction_runs_above(sse_df_bad, cutoffs_across_hists[:,cutoff_index], nbh_ii)
       tFRF_ROC_good_X_init.append(t_cutoff_index_g_FRF_rc)
@@ -122,10 +128,11 @@ def main(args):
 
     tFRF_ROC_good_X.append(tFRF_ROC_good_X_init)
     tFRF_ROC_bad_Y.append(tFRF_ROC_bad_Y_init)
-
+  
+  print("[4/5] Iterating through cutoff indices:")
   tMHF_ROC_good_X = []
   tMHF_ROC_bad_Y = []
-  for cutoff_index in range(len(cutoffs_across_hists[0,:])):
+  for cutoff_index in tqdm(range(len(cutoffs_across_hists[0,:]))):
     #if not cutoff_index % 8:
     t_cutoff_index_g_MHF_rc = count_mean_runs_above(sse_df_good, cutoffs_across_hists[:,cutoff_index])
     t_cutoff_index_b_MHF_rc = count_mean_runs_above(sse_df_bad, cutoffs_across_hists[:,cutoff_index])
@@ -138,7 +145,7 @@ def main(args):
   #print("Mean values")
   #print(tMHF_ROC_good_X)
   #print(tMHF_ROC_bad_Y)
-
+  print('[5/5] Plotting ROC Curves...')
   fig, axs = plt.subplots(ncols=2,nrows=1,figsize=(12,6))
 
   axs[1].set_xlabel('Fraction of good runs with at least N histogram flags')
@@ -166,7 +173,7 @@ def main(args):
   axs[0].legend(loc='lower right')
 
   plt.savefig(args.output_dir + "/RF_HF_ROC_comparison_" + algorithm_name + ".pdf",bbox_inches='tight')
-  print("SAVED: " + args.output_dir + "/RF_HF_ROC_comparison_" + algorithm_name + ".pdf")
+  print("[SAVED] " + args.output_dir + "RF_HF_ROC_comparison_" + algorithm_name + ".pdf")
 
 if __name__ == "__main__":
   args = parse_arguments()
