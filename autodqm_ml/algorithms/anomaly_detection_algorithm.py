@@ -97,16 +97,26 @@ class AnomalyDetectionAlgorithm():
             if "normalize" in histogram_info.keys():
                 if histogram_info["normalize"]:
                     sum = awkward.sum(df[histogram], axis = -1)
+                    print("Normalisation in 1D or 2D")
+                    oneortwo = 1
                     if histogram_info["n_dim"] == 2:
                         sum = awkward.sum(sum, axis = -1)
-
+                        oneortwo = 2
+                        print("Normalise in 2D only")
                     logger.debug("[anomaly_detection_algorithm : load_data] Scaling all entries in histogram '%s' by the sum of total entries." % histogram)
-                    df[histogram] = df[histogram] * (1. / sum) 
+                    df[histogram] = df[histogram] * (1. / sum)
+                     
+                    #print(df[histogram])
+                    #print(len(sum))
+                    #if oneortwo == 2:
+                    #    oneortwo = len(df[histogram][0][0])
+                    #    for iter in range(len(df[histogram][0])):
+                    #        print(df[histogram][0][iter])
+                    #print((len(df[histogram]), len(df[histogram][0]), oneortwo))
         self.n_train = awkward.sum(df.label == 0)
         self.n_bad_runs = awkward.sum(df.label != 0)
         self.df = df
         self.n_histograms = len(list(self.histograms.keys()))
-
         logger.debug("[AnomalyDetectionAlgorithm : load_data] Loaded data for %d histograms with %d events in training set, excluding the %d bad runs." % (self.n_histograms, self.n_train, self.n_bad_runs))
 
         self.data_is_loaded = True
@@ -120,7 +130,10 @@ class AnomalyDetectionAlgorithm():
         self.df[histogram + "_score_" + self.tag] = score
         if reconstructed_hist is not None:
             self.df[histogram + "_reco_" + self.tag] = reconstructed_hist
-
+            #print(histogram)
+            #print(reconstructed_hist[0][0])
+            #for i in reconstructed_hist[0][0]:
+            #    if i != 0: print(i)
 
     def save(self, histograms = {}, tag = "", algorithm = "", reco_assess_plots = False):
         """

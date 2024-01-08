@@ -127,8 +127,23 @@ class AutoEncoder(MLAlgorithm):
             callbacks = []
             if self.config["early_stopping"]:
                 callbacks.append(keras.callbacks.EarlyStopping(patience = self.config["early_stopping_rounds"]))
-            #print(self.config["n_components"])
             #print(list(inputs.values())[0])
+
+            print("TRAIN")
+            out_arr = list(outputs.values())[0].numpy()
+            #print(out_arr)
+            for row in out_arr[0]:
+                print(row)
+
+            print("TEST")
+            out_arr_val = list(outputs_val.values())[0].numpy()
+            #print(out_arr_val)
+            for row in out_arr_val[0]:
+                print(row)
+
+            #HERE
+            #HERE
+            #HERE
 
             model.fit(
                     inputs,
@@ -138,7 +153,7 @@ class AutoEncoder(MLAlgorithm):
                     epochs = self.config["n_epochs"],
                     batch_size = self.config["batch_size"]
             )
-            
+            print(model)
             self.save_model(model, model_file)
             self.models[histogram] = model
 
@@ -183,11 +198,17 @@ class AutoEncoder(MLAlgorithm):
         if split == "train":
             cut = self.df.label == 0
         elif split == "test":
-            cut = self.df.label == 1
+            cut = self.df.label == 1 # 1
         else:
             cut = self.df.run_number >= 0 # dummy all True cut
 
         df = self.df[cut]
+
+        #print("This is the post-cut df:")
+        #print(df)
+        #print(dir(df[0]))
+        #for value in df[0]['L1T//Run summary/L1TStage2CaloLayer2/NonIsolated-Tau/TausOcc']:
+        #    print(value)
 
         for histogram, info in self.histograms.items():
             if histogram_name is not None: # self.mode == "individual", i.e. separate autoencoder for each histogram
@@ -198,7 +219,12 @@ class AutoEncoder(MLAlgorithm):
             inputs["input_" + info["name"]] = data
             outputs["output_" + info["name"]] = data
 
-        
+        #print(list(inputs.values()))
+        #in_arr = list(inputs.values())[0].numpy()
+        #out_arr = list(outputs.values())[0].numpy()
+        #print(out_arr)
+        #for row in out_arr[0]:
+        #    print(row)
 
         return inputs, outputs
 
@@ -282,6 +308,7 @@ class AutoEncoder_DNN():
                         activation = "relu",
                         name = name
                 )(layer)
+                print(layer)
             if self.batch_norm:
                 layer = keras.layers.BatchNormalization(name = name + "_batch_norm")
             if self.dropout > 0:
@@ -307,7 +334,7 @@ class AutoEncoder_DNN():
                 activation = "relu"
                 n_filters = 1
                 name = "output_%s" % (info["name"])
-                batch_norm = False
+                batch_norm = None
                 dropout = 0
             else:
                 activation = "relu"
