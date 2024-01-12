@@ -119,10 +119,6 @@ class AnomalyDetectionAlgorithm():
         self.df[histogram + "_score_" + self.tag] = score
         if reconstructed_hist is not None:
             self.df[histogram + "_reco_" + self.tag] = reconstructed_hist
-            #print(histogram)
-            #print(reconstructed_hist[0][0])
-            #for i in reconstructed_hist[0][0]:
-            #    if i != 0: print(i)
 
     def save(self, histograms = {}, tag = "", algorithm = "", reco_assess_plots = False):
         """

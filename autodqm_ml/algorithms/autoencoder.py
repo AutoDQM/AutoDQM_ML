@@ -4,7 +4,6 @@ import numpy
 import json
 import awkward
 import copy
-import matplotlib.pyplot as plt
 import logging
 logger = logging.getLogger(__name__)
 
@@ -17,13 +16,13 @@ from autodqm_ml import utils
 DEFAULT_OPT = {
         "batch_size" : 128,
         "val_batch_size" : 1024,
-        "learning_rate" : 0.001, # 0.001
+        "learning_rate" : 0.001,
         "n_epochs" : 1000,
         "early_stopping" : True,
         "early_stopping_rounds" : 3,
         "n_hidden_layers" : 2,
         "n_nodes" : 50,
-        "n_components" : 3, # 3
+        "n_components" : 3,
         "kernel_1d" : 3,
         "kernel_2d" : 3,
         "strides_1d" : 1,
@@ -62,6 +61,7 @@ class AutoEncoder(MLAlgorithm):
         logger.debug("[AutoEncoder : __init__] Constructing AutoEncoder with the following training options and hyperparameters:")
         for param, value in self.config.items():
             logger.debug("\t %s : %s" % (param, str(value)))
+
 
     def load_model(self, model_file):
         """
@@ -118,7 +118,6 @@ class AutoEncoder(MLAlgorithm):
             mod_A = numpy.power(10,int(numpy.abs(numpy.log10(histograms[hist_name]['n_bins'] / (125*(3 - histograms[hist_name]['n_dim']))))))
             self.config["n_components"] = self.config["n_components"] * mod_A
             self.config["learning_rate"] = self.config["learning_rate"] / mod_A
-            print(self.config)
 
             logger.debug("[AutoEncoder : train] Training autoencoder with %d dimensions in latent space for histogram(s) '%s' with %d training examples." % (self.config["n_components"], hist_name, len(list(inputs.values())[0])))
 
@@ -144,6 +143,7 @@ class AutoEncoder(MLAlgorithm):
 
             self.save_model(model, model_file)
             self.models[histogram] = model
+
             self.config["n_components"] = self.config["n_components"] / mod_A
             self.config["learning_rate"] = self.config["learning_rate"] * mod_A
 
@@ -188,40 +188,20 @@ class AutoEncoder(MLAlgorithm):
         if split == "train":
             cut = self.df.label == 0
         elif split == "test":
-            cut = self.df.label == 1 # 1
+            cut = self.df.label == 1
         else:
             cut = self.df.run_number >= 0 # dummy all True cut
 
         df = self.df[cut]
-
-        #print("This is the post-cut df:")
-        #print(df)
-        #print(dir(df[0]))
 
         for histogram, info in self.histograms.items():
             if histogram_name is not None: # self.mode == "individual", i.e. separate autoencoder for each histogram
                 if not histogram == histogram_name: # only grab the relevant histogram for this autoencoder
                     continue
 
-            #print("HISTOGRAMMMMMMMMMSSSSS")
-            #replacement_dat = []
-            #print(df[histogram])
-            #print(len(df[histogram]))
-            #for histogram_dat in df[histogram]:
-            #    flattened_array = numpy.array(histogram_dat).flatten()
-            #    replacement_dat.append(flattened_array)
-            #df[histogram] = replacement_dat
-            #print(len(df[histogram]))
             data = tf.convert_to_tensor(df[histogram])
             inputs["input_" + info["name"]] = data
             outputs["output_" + info["name"]] = data
-
-        #print(list(inputs.values()))
-        #in_arr = list(inputs.values())[0].numpy()
-        #out_arr = list(outputs.values())[0].numpy()
-        #print(out_arr)
-        #for row in out_arr[0]:
-        #    print(row)
 
         return inputs, outputs
 
@@ -331,7 +311,7 @@ class AutoEncoder_DNN():
                 activation = "relu"
                 n_filters = 1
                 name = "output_%s" % (info["name"])
-                batch_norm = None
+                batch_norm = False
                 dropout = 0
             else:
                 activation = "relu"

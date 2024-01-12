@@ -117,8 +117,8 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, run, save_name,
     ax2.set_ylabel("ML Reco / Original")
     ax2.set_xlabel(x_label)
     ax2.set_ylim(rat_lim)
-    #ax1.set_ylim([0.0, awkward.max(original) * 1.5])
-    ax1.set_ylim([awkward.min(original) * 1.5, awkward.max(original) * 1.5])
+    ax1.set_ylim([0.0, awkward.max(original) * 1.5])
+    #ax1.set_ylim([awkward.min(original) * 1.5, awkward.max(original) * 1.5])
 
     if log_y:
         ax1.set_yscale("log")

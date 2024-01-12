@@ -197,8 +197,6 @@ class DataFetcher():
                                         break
 
 
-                #print(len(files))
-                #print(len(unique_files))
                 if len(unique_files) < 5:
                     logger.info("[DataFetcher : get_list_of_files] Only '%s' runs have been selected, which is a very limited data set. Advise use a full set of runs outside of testing." % (len(unique_files)))
 
