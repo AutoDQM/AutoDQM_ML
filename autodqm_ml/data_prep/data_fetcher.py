@@ -197,8 +197,8 @@ class DataFetcher():
                                         break
 
 
-                print(len(files))
-                print(len(unique_files))
+                #print(len(files))
+                #print(len(unique_files))
                 if len(unique_files) < 5:
                     logger.info("[DataFetcher : get_list_of_files] Only '%s' runs have been selected, which is a very limited data set. Advise use a full set of runs outside of testing." % (len(unique_files)))
 
@@ -356,6 +356,23 @@ class DataFetcher():
         for hist, data in hist_data.items():
             logger.debug("\t %s : %s" % (hist, data))
 
+        '''
+        replacement_hists = []
+        for histogram_set in list(hist_data.values()):
+            for histogram_indiv in histogram_set:
+                #print(histogram_indiv)
+                #print(numpy.array(histogram_indiv).shape)
+                if numpy.array(histogram_indiv).ndim == 1:
+                    replacement_hists.append([histogram_indiv])
+                if numpy.array(histogram_indiv).ndim >= 2:
+                    #print(numpy.array(histogram_indiv).shape)
+                    flattened_array = numpy.ravel(numpy.array(histogram_indiv))
+                    conv_flattened_array = [flattened_array.astype(numpy.float32)]
+                    replacement_hists.append(conv_flattened_array)
+        #print(replacement_hists)
+        for key, new_value in zip(hist_data.keys(), replacement_hists):
+            hist_data[key] = new_value
+        '''
         return hist_data
 
 

@@ -4,7 +4,7 @@ import numpy
 import json
 import awkward
 import copy
-
+import matplotlib.pyplot as plt
 import logging
 logger = logging.getLogger(__name__)
 
@@ -17,13 +17,13 @@ from autodqm_ml import utils
 DEFAULT_OPT = {
         "batch_size" : 128,
         "val_batch_size" : 1024,
-        "learning_rate" : 0.001,
+        "learning_rate" : 0.001, # 0.001
         "n_epochs" : 1000,
         "early_stopping" : True,
         "early_stopping_rounds" : 3,
         "n_hidden_layers" : 2,
         "n_nodes" : 50,
-        "n_components" : 3,
+        "n_components" : 3, # 3
         "kernel_1d" : 3,
         "kernel_2d" : 3,
         "strides_1d" : 1,
@@ -62,7 +62,6 @@ class AutoEncoder(MLAlgorithm):
         logger.debug("[AutoEncoder : __init__] Constructing AutoEncoder with the following training options and hyperparameters:")
         for param, value in self.config.items():
             logger.debug("\t %s : %s" % (param, str(value)))
-
 
     def load_model(self, model_file):
         """
@@ -110,12 +109,18 @@ class AutoEncoder(MLAlgorithm):
                 hist_name = str(list(self.models.keys()))
             else:
                 hist_name = histogram
-            logger.debug("[AutoEncoder : train] Training autoencoder with %d dimensions in latent space for histogram(s) '%s' with %d training examples." % (self.config["n_components"], hist_name, len(list(inputs.values())[0]))) 
 
             if self.mode == "simultaneous":
                 histograms = self.histograms
             elif self.mode == "individual":
                 histograms = { histogram : self.histograms[histogram] }
+
+            mod_A = numpy.power(10,int(numpy.abs(numpy.log10(histograms[hist_name]['n_bins'] / (125*(3 - histograms[hist_name]['n_dim']))))))
+            self.config["n_components"] = self.config["n_components"] * mod_A
+            self.config["learning_rate"] = self.config["learning_rate"] / mod_A
+            print(self.config)
+
+            logger.debug("[AutoEncoder : train] Training autoencoder with %d dimensions in latent space for histogram(s) '%s' with %d training examples." % (self.config["n_components"], hist_name, len(list(inputs.values())[0])))
 
             model = AutoEncoder_DNN(histograms, **self.config).model()
            
@@ -127,23 +132,6 @@ class AutoEncoder(MLAlgorithm):
             callbacks = []
             if self.config["early_stopping"]:
                 callbacks.append(keras.callbacks.EarlyStopping(patience = self.config["early_stopping_rounds"]))
-            #print(list(inputs.values())[0])
-
-            print("TRAIN")
-            out_arr = list(outputs.values())[0].numpy()
-            #print(out_arr)
-            for row in out_arr[0]:
-                print(row)
-
-            print("TEST")
-            out_arr_val = list(outputs_val.values())[0].numpy()
-            #print(out_arr_val)
-            for row in out_arr_val[0]:
-                print(row)
-
-            #HERE
-            #HERE
-            #HERE
 
             model.fit(
                     inputs,
@@ -153,9 +141,11 @@ class AutoEncoder(MLAlgorithm):
                     epochs = self.config["n_epochs"],
                     batch_size = self.config["batch_size"]
             )
-            print(model)
+
             self.save_model(model, model_file)
             self.models[histogram] = model
+            self.config["n_components"] = self.config["n_components"] / mod_A
+            self.config["learning_rate"] = self.config["learning_rate"] * mod_A
 
     
     def predict(self, batch_size = 1024):
@@ -207,14 +197,21 @@ class AutoEncoder(MLAlgorithm):
         #print("This is the post-cut df:")
         #print(df)
         #print(dir(df[0]))
-        #for value in df[0]['L1T//Run summary/L1TStage2CaloLayer2/NonIsolated-Tau/TausOcc']:
-        #    print(value)
 
         for histogram, info in self.histograms.items():
             if histogram_name is not None: # self.mode == "individual", i.e. separate autoencoder for each histogram
                 if not histogram == histogram_name: # only grab the relevant histogram for this autoencoder
                     continue
 
+            #print("HISTOGRAMMMMMMMMMSSSSS")
+            #replacement_dat = []
+            #print(df[histogram])
+            #print(len(df[histogram]))
+            #for histogram_dat in df[histogram]:
+            #    flattened_array = numpy.array(histogram_dat).flatten()
+            #    replacement_dat.append(flattened_array)
+            #df[histogram] = replacement_dat
+            #print(len(df[histogram]))
             data = tf.convert_to_tensor(df[histogram])
             inputs["input_" + info["name"]] = data
             outputs["output_" + info["name"]] = data

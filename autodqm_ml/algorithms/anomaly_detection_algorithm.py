@@ -97,22 +97,11 @@ class AnomalyDetectionAlgorithm():
             if "normalize" in histogram_info.keys():
                 if histogram_info["normalize"]:
                     sum = awkward.sum(df[histogram], axis = -1)
-                    print("Normalisation in 1D or 2D")
-                    oneortwo = 1
                     if histogram_info["n_dim"] == 2:
                         sum = awkward.sum(sum, axis = -1)
-                        oneortwo = 2
-                        print("Normalise in 2D only")
                     logger.debug("[anomaly_detection_algorithm : load_data] Scaling all entries in histogram '%s' by the sum of total entries." % histogram)
                     df[histogram] = df[histogram] * (1. / sum)
                      
-                    #print(df[histogram])
-                    #print(len(sum))
-                    #if oneortwo == 2:
-                    #    oneortwo = len(df[histogram][0][0])
-                    #    for iter in range(len(df[histogram][0])):
-                    #        print(df[histogram][0][iter])
-                    #print((len(df[histogram]), len(df[histogram][0]), oneortwo))
         self.n_train = awkward.sum(df.label == 0)
         self.n_bad_runs = awkward.sum(df.label != 0)
         self.df = df
