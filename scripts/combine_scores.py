@@ -1,8 +1,8 @@
 import pandas as pd
 
-df1 = pd.read_csv("HLTPhysics_test_ae_runs_and_sse_scores.csv")
+df1 = pd.read_csv("HLTPhysics_ae_120124_runs_and_sse_scores.csv")
 df1 = df1.drop(columns=["algo","year"])
-df2 = pd.read_csv("HLTPhysics_test_pca_runs_and_sse_scores.csv")
+df2 = pd.read_csv("HLTPhysics_pca_021123_runs_and_sse_scores.csv")
 df2 = df2.drop(columns=["algo","year"])
 df3 = pd.read_csv("HLTPhysics_test_betab_runs_and_sse_scores_pull.csv")
 df3 = df3.drop(columns=["algo"])
