@@ -16,13 +16,13 @@ from autodqm_ml import utils
 DEFAULT_OPT = {
         "batch_size" : 128,
         "val_batch_size" : 1024,
-        "learning_rate" : 0.001,
+        "learning_rate" : 0.0008, # 0.001
         "n_epochs" : 1000,
         "early_stopping" : True,
         "early_stopping_rounds" : 3,
         "n_hidden_layers" : 2,
         "n_nodes" : 50,
-        "n_components" : 3,
+        "n_components" : 5, # 3
         "kernel_1d" : 3,
         "kernel_2d" : 3,
         "strides_1d" : 1,
