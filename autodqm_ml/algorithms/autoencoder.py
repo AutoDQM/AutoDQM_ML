@@ -285,7 +285,6 @@ class AutoEncoder_DNN():
                         activation = "relu",
                         name = name
                 )(layer)
-                print(layer)
             if self.batch_norm:
                 layer = keras.layers.BatchNormalization(name = name + "_batch_norm")
             if self.dropout > 0:
