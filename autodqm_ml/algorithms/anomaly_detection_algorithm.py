@@ -99,14 +99,13 @@ class AnomalyDetectionAlgorithm():
                     sum = awkward.sum(df[histogram], axis = -1)
                     if histogram_info["n_dim"] == 2:
                         sum = awkward.sum(sum, axis = -1)
-
                     logger.debug("[anomaly_detection_algorithm : load_data] Scaling all entries in histogram '%s' by the sum of total entries." % histogram)
-                    df[histogram] = df[histogram] * (1. / sum) 
+                    df[histogram] = df[histogram] * (1. / sum)
+                     
         self.n_train = awkward.sum(df.label == 0)
         self.n_bad_runs = awkward.sum(df.label != 0)
         self.df = df
         self.n_histograms = len(list(self.histograms.keys()))
-
         logger.debug("[AnomalyDetectionAlgorithm : load_data] Loaded data for %d histograms with %d events in training set, excluding the %d bad runs." % (self.n_histograms, self.n_train, self.n_bad_runs))
 
         self.data_is_loaded = True
@@ -120,7 +119,6 @@ class AnomalyDetectionAlgorithm():
         self.df[histogram + "_score_" + self.tag] = score
         if reconstructed_hist is not None:
             self.df[histogram + "_reco_" + self.tag] = reconstructed_hist
-
 
     def save(self, histograms = {}, tag = "", algorithm = "", reco_assess_plots = False):
         """
