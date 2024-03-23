@@ -8,6 +8,7 @@ import csv
 from autodqm_ml import utils
 from autodqm_ml.data_formats.histogram import Histogram
 from autodqm_ml.constants import kANOMALOUS, kGOOD
+from autodqm_ml.rebinning import rebinning_min_occupancy
 
 import logging
 logger = logging.getLogger(__name__)
@@ -96,12 +97,24 @@ class AnomalyDetectionAlgorithm():
             # Normalize (if specified in histograms dict)
             if "normalize" in histogram_info.keys():
                 if histogram_info["normalize"]:
-                    sum = awkward.sum(df[histogram], axis = -1)
                     if histogram_info["n_dim"] == 2:
+                        '''
+                        sum = awkward.sum(df[histogram], axis = -1)
                         sum = awkward.sum(sum, axis = -1)
+                        df[histogram] = df[histogram] * (1. / sum)
+                        '''
+                        #print(len(df[histogram]),len(df[histogram][0]),len(df[histogram][0][0]))
+                        logger.debug("[anomaly_detection_algorithm : load_data] Rebinning and normalising the 2D histogram '%s'" % histogram)
+                        df[histogram] = rebinning_min_occupancy(df[histogram], 0.001)
+                        new_shape = (len(df[histogram][0]),)
+                        self.histograms[histogram]["shape"] = new_shape
+                        self.histograms[histogram]["n_dim"] = len(new_shape)
+                        self.histograms[histogram]["n_bins"] = len(df[histogram][0])
+                    else:
+                        sum = awkward.sum(df[histogram], axis = -1)
+                        logger.debug("[anomaly_detection_algorithm : load_data] Normalising the 1D histogram '%s' by the sum of total entries." % histogram)
+                        df[histogram] = df[histogram] * (1. / sum)
 
-                    logger.debug("[anomaly_detection_algorithm : load_data] Scaling all entries in histogram '%s' by the sum of total entries." % histogram)
-                    df[histogram] = df[histogram] * (1. / sum) 
         self.n_train = awkward.sum(df.label == 0)
         self.n_bad_runs = awkward.sum(df.label != 0)
         self.df = df
