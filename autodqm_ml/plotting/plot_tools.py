@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt 
+import matplotlib.ticker
 import numpy as np 
 from pathlib import Path
 import awkward
@@ -85,15 +86,22 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, run, save_name,
     x_label = name + " (a.u.)"
     y_label = "Fraction of events"
     
-    rat_lim = kwargs.get("rat_lim", [0.0, 2.0])
+    rat_lim = kwargs.get("rat_lim", [-0.025, 0.025])
     log_y = kwargs.get("log_y", False)
 
-    h_orig = Hist1D(original, bins = bins, label = "original")
+    h_orig = Hist1D(original, bins = bins, label = "Run " + str(run) + " data")
     h_orig._counts = original
     h_reco = []
    
     for reco, info in recos.items():
-        h = Hist1D(info["reco"], bins = bins, label = "%s [sse : %.2E]" % (reco, info["score"]))
+        if "pca" in reco.lower():
+            algo_name = "PCA reconstruction"
+        elif "ae" in reco.lower():
+            algo_name = "AE reconstruction"
+        else:
+            algo_name = "Reconstruction"
+
+        h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE $\times$ 1000 = " + str("{:.3g}".format(1000*info["score"])))
         h._counts = info["reco"]
         h_reco.append(h)
 
@@ -111,14 +119,27 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, run, save_name,
     for idx, h in enumerate(h_reco):
         if "pca" in save_name.lower(): idx = idx + 1
         if ("ae" in save_name.lower()) or ("autoencoder" in save_name.lower()): idx = idx
-        ratio = h.divide(h_orig)
+        #ratio = h.divide(h_orig)
+        ratio = h_orig-h
         ratio.metadata["label"] = None
         ratio.plot(ax=ax2, color = "C%d" % (idx+1), errors = False, linewidth=2)
 
     ax1.set_ylabel(y_label, fontsize = universal_font_size)
-    ax2.set_ylabel("Reco / Original", fontsize = universal_font_size)
-    ax2.set_xlabel(x_label, fontsize = universal_font_size)
+    legend = ax1.legend(loc="upper center")
+    #legend.set_bbox_to_anchor((0.5, 0.9))
+    for text in legend.get_texts():
+        text.set_fontsize(universal_font_size)
+    ax2.set_ylabel("Data - Reconstruction", fontsize = universal_font_size)
+    #ax2.set_xlabel(x_label, fontsize = universal_font_size)
+    ax2.set_xlabel(r"L1T muon $\eta$", fontsize = universal_font_size)
     ax2.set_ylim(rat_lim)
+
+    xticks = [0.0,0.2,0.4,0.6,0.8,1.0]
+    ticklabels = ['-2.5', '-1.5', '-0.5', '0.5', '1.5', '2.5']
+    plt.xticks(xticks, ticklabels)
+
+    plt.gca().xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+
     #ax1.set_ylim([0.0, awkward.max(original) * 1.5])
 
     if log_y:
@@ -217,7 +238,7 @@ def plot1D(original_hist, reconstructed_hist, run, hist_path, algo, threshold):
     ax.bar(binEdges, reconstructed_hist, alpha=0.5, label='reconstructed', width=width)
     plotname = hist_path.split('/')[-1]
     ax.set_title(f'{plotname} {run} {algo}')
-    leg = ax.legend(loc='upper right')
+    leg = ax.legend(loc='upper center',fontsize=universal_font_size)
     text = '\n'.join((
         f'mse: {mse:.4e}',
         ))
@@ -365,7 +386,7 @@ def plot_rescaled_score_hist(data, hist, savename):
             badax.spines['right'].set_color('tab:orange')
             badax.set_xscale('log')    
     fig.suptitle(hist)
-    axes[0].legend()
+    axes[0].legend(loc="upper center",fontsize=universal_font_size)
     axes[0].set_title('Min-Max Scaled Anomaly Scores')
     fig.savefig(savename, bbox_inches = 'tight')
     fig.savefig(savename.replace('.png', '.pdf'), bbox_inches = 'tight')

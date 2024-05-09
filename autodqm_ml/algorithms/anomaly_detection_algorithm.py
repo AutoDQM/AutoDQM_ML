@@ -9,6 +9,7 @@ from autodqm_ml import utils
 from autodqm_ml.data_formats.histogram import Histogram
 from autodqm_ml.constants import kANOMALOUS, kGOOD
 from autodqm_ml.rebinning import rebinning_min_occupancy
+from autodqm_ml.evaluation import pull_tool
 
 import logging
 logger = logging.getLogger(__name__)
@@ -35,6 +36,7 @@ class AnomalyDetectionAlgorithm():
         self.histograms = {}
         self.input_file = None
         self.remove_low_stat = True
+        self.integrals = None
 
         for key, value in kwargs.items():
             if value is not None:
@@ -89,10 +91,19 @@ class AnomalyDetectionAlgorithm():
             a = awkward.to_numpy(df[histogram][0])
             self.histograms[histogram]["shape"] = a.shape
             self.histograms[histogram]["n_dim"] = len(a.shape)
+            #print("THIS HISTOGRAM HAS THIS SHAPE AND THIS MANY DIMS")
+            #if a.shape == (4096,): print(self.histograms[histogram]["name"])
+            #print(a.shape)
+            #print(len(a.shape))
+            #print()
+            #print()
+            #print()
+            #print()
             self.histograms[histogram]["n_bins"] = 1
             for x in a.shape:
                 self.histograms[histogram]["n_bins"] *= x 
 
+        hist_integrals = []
         for histogram, histogram_info in self.histograms.items():
             # Normalize (if specified in histograms dict)
             if "normalize" in histogram_info.keys():
@@ -105,20 +116,23 @@ class AnomalyDetectionAlgorithm():
                         '''
                         #print(len(df[histogram]),len(df[histogram][0]),len(df[histogram][0][0]))
                         logger.debug("[anomaly_detection_algorithm : load_data] Rebinning and normalising the 2D histogram '%s'" % histogram)
-                        df[histogram] = rebinning_min_occupancy(df[histogram], 0.001)
+                        df[histogram], hist_integral = rebinning_min_occupancy(df[histogram], 0.001)
                         new_shape = (len(df[histogram][0]),)
                         self.histograms[histogram]["shape"] = new_shape
                         self.histograms[histogram]["n_dim"] = len(new_shape)
                         self.histograms[histogram]["n_bins"] = len(df[histogram][0])
                     else:
                         sum = awkward.sum(df[histogram], axis = -1)
+                        hist_integral = sum
                         logger.debug("[anomaly_detection_algorithm : load_data] Normalising the 1D histogram '%s' by the sum of total entries." % histogram)
                         df[histogram] = df[histogram] * (1. / sum)
+            hist_integrals.append(numpy.array(hist_integral).ravel())
 
         self.n_train = awkward.sum(df.label == 0)
         self.n_bad_runs = awkward.sum(df.label != 0)
         self.df = df
         self.n_histograms = len(list(self.histograms.keys()))
+        self.integrals = hist_integrals
 
         logger.debug("[AnomalyDetectionAlgorithm : load_data] Loaded data for %d histograms with %d events in training set, excluding the %d bad runs." % (self.n_histograms, self.n_train, self.n_bad_runs))
 
@@ -130,7 +144,10 @@ class AnomalyDetectionAlgorithm():
         Add fields to the df containing the score for this algorithm (p-value/pull-value for statistical tests, sse for ML algorithms)
         and the reconstructed histograms (for ML algorithms only).
         """
-        self.df[histogram + "_score_" + self.tag] = score
+        self.df[histogram + "_score_" + self.tag] = score * len(self.df[histogram][0])
+        #print("HIST SHAPE")
+        #print(len(self.df[histogram]))
+        #print(len(self.df[histogram][0]))
         if reconstructed_hist is not None:
             self.df[histogram + "_reco_" + self.tag] = reconstructed_hist
 
@@ -148,12 +165,77 @@ class AnomalyDetectionAlgorithm():
             awkward.to_parquet(self.df, output_parquet)
             logger.info("[AnomalyDetectionAlgorithm : save] Saving output for plot assessment '%s'." % (output_parquet))
 
+        chi2_analysis_output_file = "%s/%s_%s_chi2.csv" % (self.output_dir, self.input_file.split("/")[-1].replace(".parquet", ""), tag)
+        chi2df = self.df
+
+        reco_analysis_output_file = "%s/%s_%s_reco_integs.csv" % (self.output_dir, self.input_file.split("/")[-1].replace(".parquet", ""), tag)
+        reco_df = self.df
+
         desired_hists_for_study = list(histograms.keys())
         score_columns = [hist_name + "_score_" + tag for hist_name in desired_hists_for_study]
+        reco_columns = [hist_name + "_reco_" + tag for hist_name in desired_hists_for_study]
         columns_to_keep = ['run_number', 'year', 'label'] + score_columns
+        chi2_cols_to_keep = ['run_number', 'year', 'label']
+        reco_results = ['run_number', 'year', 'label']
         filtered_fields = {field: self.df[field] for field in self.df.fields if field in columns_to_keep}
+        chi2_filtered_fds = {field: chi2df[field] for field in chi2df.fields if field in chi2_cols_to_keep}
+        reco_fields = {field: reco_df[field] for field in reco_df.fields if field in reco_results}
+
+        chi2_tol0_all_hists = []
+        maxpull_tol0_all_hists = []
+        chi2_tol1_all_hists = []
+        maxpull_tol1_all_hists = []
+
+        for hist_iter in range(len(desired_hists_for_study)):
+            data_raw = chi2df[desired_hists_for_study[hist_iter]] * self.integrals[hist_iter][:, numpy.newaxis]
+            ref_raw = numpy.array(chi2df[reco_columns[hist_iter]] * 100*self.integrals[hist_iter][:, numpy.newaxis])
+            ref_raw[ref_raw < 0] = 0
+            ref_list_raw = numpy.array([[subarray] for subarray in ref_raw])
+            #run_list = self.df['run_number']
         
+            chi2_tol0_vals = []
+            maxpull_tol0_vals = []
+            chi2_tol1_vals = []
+            maxpull_tol1_vals = []
+            for run in range(len(data_raw)):
+                data_hist_raw = numpy.round(numpy.copy(numpy.float64(data_raw[run])))
+                ref_hists_raw = numpy.round(numpy.array([numpy.copy(numpy.float64(ref_list_raw[run]))]))
+                nBinsUsed = numpy.count_nonzero(numpy.add(ref_hists_raw[0], data_hist_raw))
+                [pull_hist, ref_hist_prob_wgt] = pull_tool.pull(data_hist_raw, ref_hists_raw, 0)
+                chi2_tol0_AB = numpy.square(pull_hist).sum()/nBinsUsed
+                maxpull_tol0_AB = pull_tool.maxPullNorm(numpy.amax(pull_hist), nBinsUsed)
+                min_pull_tol0_AB = pull_tool.maxPullNorm(numpy.amin(pull_hist), nBinsUsed)
+                if abs(min_pull_tol0_AB) > maxpull_tol0_AB: maxpull_tol0_AB = min_pull_tol0_AB
+                [pull_hist, ref_hist_prob_wgt] = pull_tool.pull(data_hist_raw, ref_hists_raw, 0.01)
+                chi2_tol1_AB = numpy.square(pull_hist).sum()/nBinsUsed
+                maxpull_tol1_AB = pull_tool.maxPullNorm(numpy.amax(pull_hist), nBinsUsed)
+                min_pull_tol1_AB = pull_tool.maxPullNorm(numpy.amin(pull_hist), nBinsUsed)
+                if abs(min_pull_tol1_AB) > maxpull_tol1_AB: maxpull_tol1_AB = min_pull_tol1_AB
+                chi2_tol0_vals.append(chi2_tol0_AB)
+                maxpull_tol0_vals.append(maxpull_tol0_AB)
+                chi2_tol1_vals.append(chi2_tol1_AB)
+                maxpull_tol1_vals.append(maxpull_tol1_AB)
+            chi2_tol0_all_hists.append(chi2_tol0_vals)
+            maxpull_tol0_all_hists.append(maxpull_tol0_vals)
+            chi2_tol1_all_hists.append(chi2_tol1_vals)
+            maxpull_tol1_all_hists.append(maxpull_tol1_vals)
+
         self.df = awkward.zip(filtered_fields)
+        chi2df = awkward.zip(chi2_filtered_fds)
+
+        complete_set_of_integrals = []
+        for hist_iter in range(len(reco_columns)):
+            integ_info = reco_df[reco_columns[hist_iter]]
+            integrals_for_each_run = []
+            for run in range(len(integ_info)):
+                integ_value = numpy.sum(numpy.copy(numpy.array(integ_info[run])))
+                #if reco_df["run_number"][run] == 361365:
+                #    #print(reco_df["run_number"][run])
+                #    print(desired_hists_for_study[hist_iter] + "," + str(integ_value))
+                integrals_for_each_run.append(integ_value)
+            complete_set_of_integrals.append(integrals_for_each_run)
+
+        reco_df = awkward.zip(reco_fields)
 
         if algorithm.lower() in ["ae","autoencoder"]:
             algo_name = "ae"
@@ -161,17 +243,58 @@ class AnomalyDetectionAlgorithm():
             algo_name = "pca"
 
         if algo_name is not None:
-            new_field = awkward.Array([algo_name] * len(self.df))
-            self.df = awkward.with_field(self.df, new_field, "algo")
+            algo_field = awkward.Array([algo_name] * len(self.df))
+            self.df = awkward.with_field(self.df, algo_field, "algo")
+            chi2df = awkward.with_field(chi2df, algo_field, "algo")
+            reco_df = awkward.with_field(reco_df, algo_field, "algo")
+
+        chi2_tol0_all_hists = numpy.array(chi2_tol0_all_hists)
+        maxpull_tol0_all_hists = numpy.array(maxpull_tol0_all_hists)
+        chi2_tol1_all_hists = numpy.array(chi2_tol1_all_hists)
+        maxpull_tol1_all_hists = numpy.array(maxpull_tol1_all_hists)
+
+        for hist_iter in range(len(desired_hists_for_study)):
+            chi2_tol0_field = awkward.Array(chi2_tol0_all_hists[hist_iter])
+            maxpull_tol0_field = awkward.Array(maxpull_tol0_all_hists[hist_iter])
+            chi2_tol1_field = awkward.Array(chi2_tol1_all_hists[hist_iter])
+            maxpull_tol1_field = awkward.Array(maxpull_tol1_all_hists[hist_iter])
+            chi2df = awkward.with_field(chi2df, chi2_tol0_field, desired_hists_for_study[hist_iter] + "_chi2_tol0")
+            chi2df = awkward.with_field(chi2df, maxpull_tol0_field, desired_hists_for_study[hist_iter] + "_maxpull_tol0")
+            chi2df = awkward.with_field(chi2df, chi2_tol1_field, desired_hists_for_study[hist_iter] + "_chi2_tol1")
+            chi2df = awkward.with_field(chi2df, maxpull_tol1_field, desired_hists_for_study[hist_iter] + "_maxpull_tol1")
+            #chi2df = awkward.with_field(chi2df, data_raw, desired_hists_for_study[hist_iter] + "_original")
+            #chi2df = awkward.with_field(chi2df, ref_raw, desired_hists_for_study[hist_iter] + "_prediction")
+            chi2df = awkward.with_field(chi2df, self.integrals[hist_iter], desired_hists_for_study[hist_iter] + "_integral")
+
+        complete_set_of_integrals = numpy.array(complete_set_of_integrals)
+        for hist_iter in range(len(reco_columns)):
+            complete_set_of_integrals_field = awkward.Array(complete_set_of_integrals[hist_iter])
+            reco_df = awkward.with_field(reco_df, complete_set_of_integrals_field, reco_columns[hist_iter] + "_reco_integrals")
 
         list_of_dicts = awkward.to_list(self.df)
+        chi2_dicts = awkward.to_list(chi2df)
+        reco_df_dicts = awkward.to_list(reco_df)
         fieldnames = list_of_dicts[0].keys()
+        chi2dfnames = chi2_dicts[0].keys()
+        recodfnames = reco_df_dicts[0].keys()
 
         with open(self.output_file, 'w', newline='') as csv_file:
             # Create a CSV writer object
             csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
             csv_writer.writeheader()
             csv_writer.writerows(list_of_dicts)
+
+        with open(chi2_analysis_output_file, 'w', newline='') as csv_file:
+            # Create a CSV writer object
+            csv_writer = csv.DictWriter(csv_file, fieldnames=chi2dfnames)
+            csv_writer.writeheader()
+            csv_writer.writerows(chi2_dicts)
+
+        with open(reco_analysis_output_file, 'w', newline='') as csv_file:
+            # Create a CSV writer object
+            csv_writer = csv.DictWriter(csv_file, fieldnames=recodfnames)
+            csv_writer.writeheader()
+            csv_writer.writerows(reco_df_dicts)
 
         self.config_file = "%s/%s_%s.json" % (self.output_dir, self.name, self.tag)
         logger.info("[AnomalyDetectionAlgorithm : save] Saving output for large data SSE assessment '%s'." % (self.output_file))

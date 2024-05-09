@@ -104,6 +104,8 @@ def rebinning_min_occupancy(df_ver_hist, min_occ_threshold):
     hist = np.array(df_ver_hist)
     number_of_first_empty = 0
     normalized_hist = hist / np.sum(hist, axis=(1, 2), keepdims=True)
+    #print(np.sum(hist, axis=(1, 2), keepdims=True))
+    original_hist_integral = np.sum(hist, axis=(1, 2), keepdims=True)
     #print("Normalised hist shape:", normalized_hist.shape) # normalise histogram shape
     flattened_hist = normalized_hist.reshape(len(hist), -1)
     print("Flattened Shape:", flattened_hist.shape)
@@ -129,4 +131,4 @@ def rebinning_min_occupancy(df_ver_hist, min_occ_threshold):
     merged_flattened_hist = merge_bins_in_arrays(flattened_hist, track_merges, number_of_first_empty)
     #print("AFTER FULL MERGE, HISTOGRAMS ARE OF LENGTH ",len(merged_flattened_hist[0]))
 
-    return merged_flattened_hist
+    return merged_flattened_hist, original_hist_integral

@@ -1,5 +1,5 @@
 '''
-Macro to use post-scripts/assess.py to convert the lsit of SSE scores to ROC curves for studies over a large data set
+Macro to use post-scripts/assess.py to convert the lsit of Chi2/max pull values to ROC curves for studies over a large data set
 Requires input directory where bad_runs_sse_scores.csv is located (this is also the output directory) and list of bad
 runs as labelled by data certification reports or similar (i.e. not algos!) (Runs not in the list of bad runs are 
 considered good runs by default)
@@ -41,15 +41,18 @@ def count_number_of_hists_above_threshold(Fdf, Fthreshold_list):
     run_row = Fdf.loc[Fdf['run_number'] == run].drop(columns=['run_number'])
     run_row = run_row.iloc[0].values
     hist_bad_count = sum(hist_sse > hist_thresh for hist_sse, hist_thresh in zip(run_row, Ft_list))
+    less_3_count = sum(hist_sse < 3 for hist_sse in run_row)
+    if (len(run_row) - less_3_count) < hist_bad_count:
+      hist_bad_count = len(run_row) - less_3_count
     bad_hist_array.append(hist_bad_count)
   return bad_hist_array
 
 # returns mean number of runs with SSE above the given threshold
-def count_mean_runs_above(Fdf, Fthreshold_list, type, single):
+def count_mean_runs_above(Fdf, Fthreshold_list, type, single, metric):
   hists_flagged_per_run = count_number_of_hists_above_threshold(Fdf, Fthreshold_list)
   return_this_list = []
   if (sum(hists_flagged_per_run) > 1.5 * len(Fdf['run_number'])) & (type == "good") & (single == 1):
-    print("[COUNT_MEAN_RUNS_ABOVE] Tracing the SSE score thresholds for each histogram at the HF data point")
+    print("[COUNT_MEAN_RUNS_ABOVE] Tracing the "+metric+" value thresholds for each histogram at the HF data point")
     for entry in Fthreshold_list: print(str(entry) + ",")
     return_this_list = Fthreshold_list
     single = 0
@@ -57,12 +60,12 @@ def count_mean_runs_above(Fdf, Fthreshold_list, type, single):
   return mean_hists_flagged_per_run, single, return_this_list
 
 # returns fraction of runs with SSE above the given threshold
-def count_fraction_runs_above(Fdf, Fthreshold_list, N_bad_hists, type, single):
+def count_fraction_runs_above(Fdf, Fthreshold_list, N_bad_hists, type, single, metric):
   hists_flagged_per_run = count_number_of_hists_above_threshold(Fdf, Fthreshold_list)
   count = len([i for i in hists_flagged_per_run if i > N_bad_hists])
   return_this_list = []
   if (N_bad_hists == 3) & (count > 0.1 * len(Fdf['run_number'])) & (type == "good") & (single == 1):
-    print("[COUNT_FRACTIONS_RUNS_ABOVE] Tracing the SSE score thresholds for each histogram at the RF data point")
+    print("[COUNT_FRACTIONS_RUNS_ABOVE] Tracing the "+metric+" value thresholds for each histogram at the RF data point")
     for entry in Fthreshold_list: print(str(entry) + ",")
     return_this_list = Fthreshold_list
     single = 0
@@ -97,12 +100,18 @@ def count_run_most_flags(df, score_thresholds):
 
 def main(args):
 
+  val_value = "Chi2"
+  #val_value = "Max pull"
+
+  if val_value == "Chi2": score_col_coinc = "chi2_tol1"
+  if val_value == "Max pull": score_col_coinc = "maxpull_tol1"
+
   sse_df = pd.read_csv(args.input_file)
   algorithm_name = str(sse_df['algo'].iloc[0]).upper()
   if algorithm_name == "BETAB": algorithm_name = "Beta_Binomial"
 
   sse_df = sse_df.loc[:,~sse_df.columns.duplicated()].copy()
-  hist_cols = [col for col in sse_df.columns if '_score_' in col]
+  hist_cols = [col for col in sse_df.columns if score_col_coinc in col]
   hist_dict = {each_hist: "max" for each_hist in hist_cols}
 
   sse_df = sse_df.groupby(['run_number','label'])[hist_cols].agg(hist_dict).reset_index()
@@ -130,7 +139,7 @@ def main(args):
   cutoffs_across_hists = np.array(cutoffs_across_hists)
   print("[LOGGER] There are " + str(len(cutoffs_across_hists)) + " histograms, " + str(len(sse_df_good['run_number'])) + " good runs and " + str(len(sse_df_bad['run_number']))  + " bad runs")
 
-  print("[LOGGER] Counting the number of histogram flags at FR threshold > 0.1, N = 3")
+  print("[LOGGER] Counting the number of histogram flags at RF threshold > 0.1, N = 3")
 
   nbh_ii = 3
   tFRF_ROC_good_X = []
@@ -138,8 +147,8 @@ def main(args):
   single = 1
   for cutoff_index in range(len(cutoffs_across_hists[0,:])):
     #if nbh_ii == 3: print("HERE:" + str(cutoff_index))
-    t_cutoff_index_g_FRF_rc, single, thresholds_fr = count_fraction_runs_above(sse_df_good, cutoffs_across_hists[:,cutoff_index], nbh_ii, "good", single)
-    t_cutoff_index_b_FRF_rc, single, dummy_bad_thresh_fr = count_fraction_runs_above(sse_df_bad, cutoffs_across_hists[:,cutoff_index], nbh_ii, "bad", single)
+    t_cutoff_index_g_FRF_rc, single, thresholds_fr = count_fraction_runs_above(sse_df_good, cutoffs_across_hists[:,cutoff_index], nbh_ii, "good", single, val_value)
+    t_cutoff_index_b_FRF_rc, single, dummy_bad_thresh_fr = count_fraction_runs_above(sse_df_bad, cutoffs_across_hists[:,cutoff_index], nbh_ii, "bad", single, val_value)
     tFRF_ROC_good_X.append(t_cutoff_index_g_FRF_rc)
     tFRF_ROC_bad_Y.append(t_cutoff_index_b_FRF_rc)
     if single == 0: break
@@ -154,8 +163,8 @@ def main(args):
 
   single = 1
   for cutoff_index in range(len(cutoffs_across_hists[0,:])):
-    t_cutoff_index_g_MHF_rc, single, thresholds_mh = count_mean_runs_above(sse_df_good, cutoffs_across_hists[:,cutoff_index], "good", single)
-    t_cutoff_index_b_MHF_rc, single, dummy_bad_thresh_mh = count_mean_runs_above(sse_df_bad, cutoffs_across_hists[:,cutoff_index], "bad", single)
+    t_cutoff_index_g_MHF_rc, single, thresholds_mh = count_mean_runs_above(sse_df_good, cutoffs_across_hists[:,cutoff_index], "good", single, val_value)
+    t_cutoff_index_b_MHF_rc, single, dummy_bad_thresh_mh = count_mean_runs_above(sse_df_bad, cutoffs_across_hists[:,cutoff_index], "bad", single, val_value)
     tMHF_ROC_good_X.append(t_cutoff_index_g_MHF_rc)
     tMHF_ROC_bad_Y.append(t_cutoff_index_b_MHF_rc)
     if single == 0: break
@@ -167,7 +176,6 @@ def main(args):
   tMHF_ROC_bad_Y = sorted(tMHF_ROC_bad_Y)
 
   algo = "pca"
-
   metric = "fr"
   #metric = "mh"
   if metric == "fr":
@@ -214,9 +222,9 @@ def main(args):
   
 
   # index of point in array closest to MH = 1.5 from good runs
-  # array of sse scores all hists and runs
-  # extract sse scores per hist, order, and calculate thresholds
-  # for each threshold, find number of sse scores above this for each hist and matching hist threshold per 265 runs, for each of good and bad run df
+  # array of Chi2/max pull values all hists and runs
+  # extract Chi2/max pull values per hist, order, and calculate thresholds
+  # for each threshold, find number of Chi2/max pull values above this for each hist and matching hist threshold per 265 runs, for each of good and bad run df
   # sum across runs and divide by number of runs
 
   result_data_mh = {'Histogram': [], 'MH': []}
@@ -241,7 +249,7 @@ def main(args):
   result_df_fr = pd.DataFrame(result_data_fr)
   result_df = pd.merge(result_df_mh, result_df_fr, on='Histogram')
 
-  result_df.to_csv('./hist_flag_freq_all_runs_'+algo+'.csv', index=False)
+  result_df.to_csv('./hist_flag_freq_all_runs_'+algo+"_"+val_value+'.csv', index=False)
 
 
   for column, threshold in zip(sse_df_bad.columns[1:], thresholds_mh):
@@ -264,32 +272,32 @@ def main(args):
 
 
   print("[LOGGER] Now calculating the frequency at which histograms are flagged in bad run, as flagged by the " + algo.upper() + " algorithm")
-  print("[LOGGER] Results for MH metric:")
+  print("[LOGGER] Results for HF metric:")
   csv_string_df_bad_mh = result_df_bad[["MH"]].to_csv(index=False, header=False)
   print(csv_string_df_bad_mh.strip())
-  print("[LOGGER] Results for FR metric:")
+  print("[LOGGER] Results for RF metric:")
   csv_string_df_bad_fr = result_df_bad[["FR"]].to_csv(index=False, header=False)
   print(csv_string_df_bad_fr.strip())
-  result_df_bad.to_csv('./hist_flag_freq_bad_runs_'+algo+'.csv', index=False)
+  result_df_bad.to_csv('./hist_flag_freq_bad_runs_'+algo+"_"+val_value+'.csv', index=False)
 
   index_mh1p5 = find_closest_index(tMHF_ROC_good_X, 1.5)
   dist_of_sse_at_mh1p5 = np.array([sub_array[index_mh1p5] for sub_array in cutoffs_across_hists])
-  log_scale_mh1p5 = np.log10(dist_of_sse_at_mh1p5)
+  log_scale_mh1p5 = np.log2(dist_of_sse_at_mh1p5)
 
   index_rf0p1 = find_closest_index(tFRF_ROC_good_X, 0.1)
   dist_of_sse_at_rf0p1 = np.array([sub_array[index_rf0p1] for sub_array in cutoffs_across_hists])
-  log_scale_rf0p1 = np.log10(dist_of_sse_at_rf0p1)
+  log_scale_rf0p1 = np.log2(dist_of_sse_at_rf0p1)
 
   bin_width = 0.1
   fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
-  ax1.hist(log_scale_mh1p5, bins=np.arange(-4, 4, step=bin_width), alpha=0.5, edgecolor='red')
-  ax1.set_title(r'SSE distribution for MH$_{\mathrm{good}}$ = 1.5')
-  ax1.set_xlabel('SSE score')
+  ax1.hist(log_scale_mh1p5, bins=np.arange(-5, 10, step=bin_width), alpha=0.5, edgecolor='red')
+  ax1.set_title(val_value + r' distribution for MH$_{\mathrm{good}}$ = 1.5')
+  ax1.set_xlabel(val_value + ' value')
   ax1.set_ylabel('Frequency')
 
-  ax2.hist(log_scale_rf0p1, bins=np.arange(-4, 4, step=bin_width), alpha=0.5, edgecolor='green')
-  ax2.set_title(r'SSE distribution for RF$_{\mathrm{good}}$ = 0.1')
-  ax2.set_xlabel('SSE score')
+  ax2.hist(log_scale_rf0p1, bins=np.arange(-5, 10, step=bin_width), alpha=0.5, edgecolor='green')
+  ax2.set_title(val_value + r' distribution for RF$_{\mathrm{good}}$ = 0.1')
+  ax2.set_xlabel(val_value + ' value')
   ax2.set_ylabel('Frequency')
 
   plt.tight_layout()

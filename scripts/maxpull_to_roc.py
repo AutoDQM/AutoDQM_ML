@@ -65,7 +65,7 @@ def count_fraction_runs_above(Fdf, Fthreshold_list, N_bad_hists):
 def main(args):
   os.system("mkdir -p %s/" % args.output_dir)
   arguments = sys.argv
-  with open(args.output_dir + '/commands_sse_scores_to_roc.txt', 'w') as f:
+  with open(args.output_dir + '/commands_chi2_maxpull_to_roc.txt', 'w') as f:
     for arg in arguments:
       f.write(arg + ' ')
 
@@ -76,10 +76,10 @@ def main(args):
   if "ae" in algorithm_name.lower() or "autoencoder" in algorithm_name.lower(): ender = "D"
 
   sse_df = sse_df.loc[:,~sse_df.columns.duplicated()].copy()
-  hist_cols = [col for col in sse_df.columns if '_score_' in col]
+  hist_cols = [col for col in sse_df.columns if '_maxpull_tol1' in col]
   hist_dict = {each_hist: "max" for each_hist in hist_cols}
 
-  sse_df = sse_df.groupby(['run_number','label'])[hist_cols].agg(hist_dict).reset_index()
+  chi2_df = sse_df.groupby(['run_number','label'])[hist_cols].agg(hist_dict).reset_index()
 
   sse_df = sse_df.sort_values(['label']).reset_index()
   sse_df = sse_df[['run_number','label'] + [col for col in sse_df.columns if (col != 'run_number')&(col != 'label')]]
@@ -172,8 +172,8 @@ def main(args):
   axs[0].axis(xmin=0,xmax=8,ymin=0,ymax=25)
   axs[0].legend(loc='lower right')
 
-  plt.savefig(args.output_dir + "/RF_HF_ROC_comparison_" + algorithm_name + ".pdf",bbox_inches='tight')
-  print("SAVED: " + args.output_dir + "/RF_HF_ROC_comparison_" + algorithm_name + ".pdf")
+  plt.savefig(args.output_dir + "/RF_HF_MaxPull_ROC_comparison_" + algorithm_name + ".pdf",bbox_inches='tight')
+  print("SAVED: " + args.output_dir + "/RF_HF_MaxPull_ROC_comparison_" + algorithm_name + ".pdf")
 
   added_plots = True
 
@@ -214,8 +214,8 @@ def main(args):
       axs_d[N_bh].legend(loc='lower right')
       print("Completed hist flag set",N_bad_hists_comp[N_bh])
 
-  plt.savefig(args.output_dir + "/RF_ROC_comparison_Nvar_" + algorithm_name + ".pdf",bbox_inches='tight')
-  print("SAVED: " + args.output_dir + "/RF_ROC_comparison_Nvar_" + algorithm_name + ".pdf")
+  plt.savefig(args.output_dir + "/RF_MaxPull_ROC_comparison_Nvar_" + algorithm_name + ".pdf",bbox_inches='tight')
+  print("SAVED: " + args.output_dir + "/RF_MaxPull_ROC_comparison_Nvar_" + algorithm_name + ".pdf")
 
 
 

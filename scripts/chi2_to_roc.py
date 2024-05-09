@@ -46,6 +46,13 @@ def count_number_of_hists_above_threshold(Fdf, Fthreshold_list):
     run_row = Fdf.loc[Fdf['run_number'] == run].drop(columns=['run_number'])
     run_row = run_row.iloc[0].values
     hist_bad_count = sum(hist_sse > hist_thresh for hist_sse, hist_thresh in zip(run_row, Ft_list))
+    # counter for Chi2 only to exclude histograms with Chi2 values < 3, which corresponds to a threshold < 3
+    less_3_count = sum(hist_sse < 3 for hist_sse in run_row)
+    if (len(run_row) - less_3_count) < hist_bad_count:
+      #print("There are " + str(hist_bad_count) + " histograms with higher Chi2 than the threshold, but " + str(less_3_count) + " histograms with a Chi2 < 3, so these are subtracted.")
+      hist_bad_count = len(run_row) - less_3_count
+      #print("[LOGGER: FOR THIS HISTOGRAM]")
+      #print("There are now only " + str(hist_bad_count) + " histograms flagged at this data point.")
     bad_hist_array.append(hist_bad_count)
   return bad_hist_array
 
@@ -65,7 +72,7 @@ def count_fraction_runs_above(Fdf, Fthreshold_list, N_bad_hists):
 def main(args):
   os.system("mkdir -p %s/" % args.output_dir)
   arguments = sys.argv
-  with open(args.output_dir + '/commands_sse_scores_to_roc.txt', 'w') as f:
+  with open(args.output_dir + '/commands_chi2_maxpull_to_roc.txt', 'w') as f:
     for arg in arguments:
       f.write(arg + ' ')
 
@@ -76,7 +83,7 @@ def main(args):
   if "ae" in algorithm_name.lower() or "autoencoder" in algorithm_name.lower(): ender = "D"
 
   sse_df = sse_df.loc[:,~sse_df.columns.duplicated()].copy()
-  hist_cols = [col for col in sse_df.columns if '_score_' in col]
+  hist_cols = [col for col in sse_df.columns if '_chi2_tol1' in col]
   hist_dict = {each_hist: "max" for each_hist in hist_cols}
 
   sse_df = sse_df.groupby(['run_number','label'])[hist_cols].agg(hist_dict).reset_index()
@@ -102,6 +109,7 @@ def main(args):
     for ii in range(len(sse_ordered)-1):
       cutoff_ii = 0.5*(sse_ordered[ii]+sse_ordered[ii+1])
       cutoff_thresholds.append(cutoff_ii)
+      #print("SSE score: "+str(sse_ordered[ii])+", and threshold val: "+str(cutoff_ii))
     cutoffs_across_hists.append(cutoff_thresholds)
 
   cutoffs_across_hists = np.array(cutoffs_across_hists)
@@ -153,7 +161,6 @@ def main(args):
     print(ender+str(3-jj)+"Y = "+str(tFRF_ROC_bad_Y[2-jj]))
     print("")
 
-  print("ae_hf_roc_good,ae_hf_roc_bad,ae_rf_n1_roc_good,ae_rf_n1_roc_bad,ae_rf_n3_roc_good,ae_rf_n3_roc_bad,ae_rf_n5_roc_good,ae_rf_n5_roc_bad")
   for i in range(len(tMHF_ROC_good_X)):
     print(tMHF_ROC_good_X[i],tMHF_ROC_bad_Y[i],tFRF_ROC_good_X[2][i],tFRF_ROC_bad_Y[2][i],tFRF_ROC_good_X[1][i],tFRF_ROC_bad_Y[1][i],tFRF_ROC_good_X[0][i],tFRF_ROC_bad_Y[0][i])
   axs[1].plot(tFRF_ROC_good_X[0],tFRF_ROC_bad_Y[0], '-rD', mfc='purple', mec='k', markersize=8, linewidth=1, label='SSE thresholds, N = ' + str(N_bad_hists[0]))
@@ -172,8 +179,8 @@ def main(args):
   axs[0].axis(xmin=0,xmax=8,ymin=0,ymax=25)
   axs[0].legend(loc='lower right')
 
-  plt.savefig(args.output_dir + "/RF_HF_ROC_comparison_" + algorithm_name + ".pdf",bbox_inches='tight')
-  print("SAVED: " + args.output_dir + "/RF_HF_ROC_comparison_" + algorithm_name + ".pdf")
+  plt.savefig(args.output_dir + "/RF_HF_Chi2_ROC_comparison_" + algorithm_name + ".pdf",bbox_inches='tight')
+  print("SAVED: " + args.output_dir + "/RF_HF_Chi2_ROC_comparison_" + algorithm_name + ".pdf")
 
   added_plots = True
 
@@ -214,8 +221,8 @@ def main(args):
       axs_d[N_bh].legend(loc='lower right')
       print("Completed hist flag set",N_bad_hists_comp[N_bh])
 
-  plt.savefig(args.output_dir + "/RF_ROC_comparison_Nvar_" + algorithm_name + ".pdf",bbox_inches='tight')
-  print("SAVED: " + args.output_dir + "/RF_ROC_comparison_Nvar_" + algorithm_name + ".pdf")
+  plt.savefig(args.output_dir + "/RF_Chi2_ROC_comparison_Nvar_" + algorithm_name + ".pdf",bbox_inches='tight')
+  print("SAVED: " + args.output_dir + "/RF_Chi2_ROC_comparison_Nvar_" + algorithm_name + ".pdf")
 
 
 
