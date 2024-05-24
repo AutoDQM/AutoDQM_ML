@@ -156,8 +156,8 @@ def main(args):
         h = '_'.join(h.split("/")[3:])
         if not os.path.isdir(args.output_dir + "/" + h + "/"):
             os.mkdir(args.output_dir + "/" + h + "/")
-        if len(score_hist_data['algo']) != 0:
-            plot_rescaled_score_hist(score_hist_data, h, args.output_dir + "/" + h + "/" + "score_hist.png")
+        #if len(score_hist_data['algo']) != 0:
+            #plot_rescaled_score_hist(score_hist_data, h, args.output_dir + "/" + h + "/" + "score_hist.png")
     # Histogram of sse for algorithms
     splits = {
             "label" : [("train", 0), ("test", 1)]}
@@ -181,7 +181,7 @@ def main(args):
                 if not recos_alg:
                     continue
                 save_name = args.output_dir + "/" + h_name + "/sse_%s_%s.pdf" % (algorithm, split)
-                make_sse_plot(h_name, recos_alg, save_name) 
+                #make_sse_plot(h_name, recos_alg, save_name) 
  
     # ROC curves (if there are labeled runs)
     has_labeled_runs = {h:True for h in histograms}
@@ -203,8 +203,8 @@ def main(args):
 
             h_name = '_'.join(h.split("/")[3:])
             save_name = args.output_dir + "/" + h_name + "/roc.pdf"
-            plot_roc_curve(h_name, roc_results[h], save_name)
-            plot_roc_curve(h_name, roc_results[h], save_name.replace(".pdf", "_log.pdf"), log = True)
+            #plot_roc_curve(h_name, roc_results[h], save_name)
+            #plot_roc_curve(h_name, roc_results[h], save_name.replace(".pdf", "_log.pdf"), log = True)
             #print_eff_table(h_name, roc_results[h])
             
 

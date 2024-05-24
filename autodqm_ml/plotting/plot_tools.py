@@ -101,7 +101,8 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, run, save_name,
         else:
             algo_name = "Reconstruction"
 
-        h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE $\times$ 1000 = " + str("{:.3g}".format(1000*info["score"])))
+        #h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE $\times$ 1000 = " + str("{:.3g}".format(1000*info["score"])))
+        h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE = " + str("{:.3g}".format(info["score"])))
         h._counts = info["reco"]
         h_reco.append(h)
 
@@ -130,8 +131,8 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, run, save_name,
     for text in legend.get_texts():
         text.set_fontsize(universal_font_size)
     ax2.set_ylabel("Data - Reconstruction", fontsize = universal_font_size)
-    #ax2.set_xlabel(x_label, fontsize = universal_font_size)
-    ax2.set_xlabel(r"L1T muon $\eta$", fontsize = universal_font_size)
+    ax2.set_xlabel(x_label, fontsize = universal_font_size)
+    #ax2.set_xlabel(r"L1T muon $\eta$", fontsize = universal_font_size)
     ax2.set_ylim(rat_lim)
 
     xticks = [0.0,0.2,0.4,0.6,0.8,1.0]

@@ -168,7 +168,7 @@ else:
 
 # Load data
 algorithm.load_data(
-    file= training_file,
+    file = training_file,
     histograms = histograms
 )
 

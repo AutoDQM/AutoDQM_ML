@@ -37,6 +37,7 @@ class AnomalyDetectionAlgorithm():
         self.input_file = None
         self.remove_low_stat = True
         self.integrals = None
+        self.means = None
 
         for key, value in kwargs.items():
             if value is not None:
@@ -91,19 +92,13 @@ class AnomalyDetectionAlgorithm():
             a = awkward.to_numpy(df[histogram][0])
             self.histograms[histogram]["shape"] = a.shape
             self.histograms[histogram]["n_dim"] = len(a.shape)
-            #print("THIS HISTOGRAM HAS THIS SHAPE AND THIS MANY DIMS")
-            #if a.shape == (4096,): print(self.histograms[histogram]["name"])
-            #print(a.shape)
-            #print(len(a.shape))
-            #print()
-            #print()
-            #print()
-            #print()
             self.histograms[histogram]["n_bins"] = 1
             for x in a.shape:
                 self.histograms[histogram]["n_bins"] *= x 
 
         hist_integrals = []
+        hist_means = []
+        #print(self.histograms[histogram]["name"])
         for histogram, histogram_info in self.histograms.items():
             # Normalize (if specified in histograms dict)
             if "normalize" in histogram_info.keys():
@@ -121,18 +116,31 @@ class AnomalyDetectionAlgorithm():
                         self.histograms[histogram]["shape"] = new_shape
                         self.histograms[histogram]["n_dim"] = len(new_shape)
                         self.histograms[histogram]["n_bins"] = len(df[histogram][0])
+                        #print(len(new_shape))
+                        mean_histogram = awkward.mean(df[histogram], axis=0)
+                        df[histogram] = awkward.Array([arr - mean_histogram for arr in df[histogram]])
+
+                        logger.debug("[anomaly_detection_algorithm : load_data] Now calculating the mean of this 2D histogram and subtracting this from each individual rebinned and normalised histogram '%s'" % histogram)
                     else:
                         sum = awkward.sum(df[histogram], axis = -1)
                         hist_integral = sum
                         logger.debug("[anomaly_detection_algorithm : load_data] Normalising the 1D histogram '%s' by the sum of total entries." % histogram)
                         df[histogram] = df[histogram] * (1. / sum)
+                        mean_histogram = awkward.mean(df[histogram], axis=0)
+                        df[histogram] = awkward.Array([arr - mean_histogram for arr in df[histogram]])
+                        logger.debug("[anomaly_detection_algorithm : load_data] Now calculating the mean of this 1D histogram and subtracting this from each individual rebinned and normalised histogram '%s'" % histogram)
             hist_integrals.append(numpy.array(hist_integral).ravel())
+            hist_means.append(mean_histogram)
 
         self.n_train = awkward.sum(df.label == 0)
         self.n_bad_runs = awkward.sum(df.label != 0)
         self.df = df
         self.n_histograms = len(list(self.histograms.keys()))
         self.integrals = hist_integrals
+        self.means = hist_means
+        print("LENGTH OF HISTMEANS IN ADA")
+        for mean_val in self.means:
+          print(len(mean_val))
 
         logger.debug("[AnomalyDetectionAlgorithm : load_data] Loaded data for %d histograms with %d events in training set, excluding the %d bad runs." % (self.n_histograms, self.n_train, self.n_bad_runs))
 
@@ -148,9 +156,6 @@ class AnomalyDetectionAlgorithm():
         #print("HIST SHAPE")
         #print(len(self.df[histogram]))
         #print(len(self.df[histogram][0]))
-        if reconstructed_hist is not None:
-            self.df[histogram + "_reco_" + self.tag] = reconstructed_hist
-
 
     def save(self, histograms = {}, tag = "", algorithm = "", reco_assess_plots = False):
         """
@@ -186,6 +191,8 @@ class AnomalyDetectionAlgorithm():
         chi2_tol1_all_hists = []
         maxpull_tol1_all_hists = []
 
+        print("WE'RE NOW SAVING SO EVERYTHING SHOULD BE HERE AS BLOODY NORMAL...")
+        print(chi2df)
         for hist_iter in range(len(desired_hists_for_study)):
             data_raw = chi2df[desired_hists_for_study[hist_iter]] * self.integrals[hist_iter][:, numpy.newaxis]
             ref_raw = numpy.array(chi2df[reco_columns[hist_iter]] * 100*self.integrals[hist_iter][:, numpy.newaxis])
