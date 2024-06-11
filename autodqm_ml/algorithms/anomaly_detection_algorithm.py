@@ -192,6 +192,8 @@ class AnomalyDetectionAlgorithm():
             ref_raw[ref_raw < 0] = 0
             ref_list_raw = numpy.array([[subarray] for subarray in ref_raw])
             #run_list = self.df['run_number']
+            print(data_raw)
+            print(ref_raw)
         
             chi2_tol0_vals = []
             maxpull_tol0_vals = []
