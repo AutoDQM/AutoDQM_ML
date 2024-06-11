@@ -157,10 +157,10 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, mean_hist, run,
     ax2.set_ylim(rat_lim)
 
     xticks = [0.0,0.2,0.4,0.6,0.8,1.0]
-    #ticklabels = ['-2.5', '-1.5', '-0.5', '0.5', '1.5', '2.5']
-    ticklabels = ['0.01', '1.01', '2.01', '3.01', '4.01', '5.01']
+    ticklabels = ['-2.5', '-1.5', '-0.5', '0.5', '1.5', '2.5']
+    #ticklabels = ['0.01', '1.01', '2.01', '3.01', '4.01', '5.01']
     plt.xticks(xticks, ticklabels)
-    plt.xscale("log")
+    #plt.xscale("log")
 
     plt.gca().xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
 

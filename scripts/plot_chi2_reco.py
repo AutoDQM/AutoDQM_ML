@@ -3,14 +3,14 @@ import matplotlib.pyplot as plt
 import ast
 
 
-hist_names = ['L1T//Run summary/L1TStage2CaloLayer2/Energy-Sums/ETTRank','L1T//Run summary/L1TStage2CaloLayer2/Energy-Sums/ETTEMRank','L1T//Run summary/L1TStage2CaloLayer2/Energy-Sums/HTTRank','L1T//Run summary/L1TStage2CaloLayer2/Energy-Sums/METRank']
+#hist_names = ['L1T//Run summary/L1TStage2CaloLayer2/Energy-Sums/ETTRank','L1T//Run summary/L1TStage2CaloLayer2/Energy-Sums/ETTEMRank','L1T//Run summary/L1TStage2CaloLayer2/Energy-Sums/HTTRank','L1T//Run summary/L1TStage2CaloLayer2/Energy-Sums/METRank']
+hist_names = ['L1T//Run summary/L1TStage2CaloLayer2/Energy-Sums/METHFRank','L1T//Run summary/L1TStage2CaloLayer2/Energy-Sums/MHTRank','L1T//Run summary/L1TStage2CaloLayer2/Energy-Sums/MHTHFRank']
 
 df = pd.read_csv('./HLTPhysics_PCA_NEW_chi2.csv')
 
 for i in range(len(hist_names)):
     df['Original_'+str(i)] = df[hist_names[i]+'_original'].apply(ast.literal_eval)
     df['Prediction_'+str(i)] = df[hist_names[i]+'_prediction'].apply(ast.literal_eval)
-    print(df[hist_names[i]+'_prediction'])
     df['Integral_'+str(i)] = df[hist_names[i]+'_integral']
     df['X2tol1_'+str(i)] = df[hist_names[i]+'_chi2_tol1']
     df = df.drop(columns=[hist_names[i]+'_original',hist_names[i]+'_prediction',hist_names[i]+'_integral',hist_names[i]+'_chi2_tol1'])
@@ -35,6 +35,8 @@ for i in range(len(hist_names)):
     axs[row, col].set_title('Run ' + str(runs_of_interest[0]))
     axs[row, col].set_xlabel(hist_names[i].split("/")[-1])
     axs[row, col].set_ylabel('Counts')
+    axs[row, col].set_xscale('log')
+    axs[row, col].set_ylim(0,3000)
     axs[row, col].legend()
     axs[row, col].grid(True)
 
@@ -43,5 +45,5 @@ plt.tight_layout()
 plt.show()
 
 print(selected_df)
-selected_df.to_csv("./EnergySums1OrigRecoArrays.csv",index=False)
+selected_df.to_csv("./EnergySums2OrigRecoArrays.csv",index=False)
 

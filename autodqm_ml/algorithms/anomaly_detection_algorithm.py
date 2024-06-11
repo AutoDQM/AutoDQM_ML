@@ -8,7 +8,7 @@ import csv
 from autodqm_ml import utils
 from autodqm_ml.data_formats.histogram import Histogram
 from autodqm_ml.constants import kANOMALOUS, kGOOD
-from autodqm_ml.rebinning import rebinning_min_occupancy
+from autodqm_ml.rebinning import rebinning_min_occupancy_2d, rebinning_min_occupancy_1d
 from autodqm_ml.evaluation import pull_tool
 
 import logging
@@ -38,7 +38,6 @@ class AnomalyDetectionAlgorithm():
         self.remove_low_stat = True
         self.integrals = None
         self.means = None
-        self.originals = None
 
         for key, value in kwargs.items():
             if value is not None:
@@ -99,7 +98,6 @@ class AnomalyDetectionAlgorithm():
 
         hist_integrals = []
         hist_means = []
-        hist_originals = []
         #print(self.histograms[histogram]["name"])
         for histogram, histogram_info in self.histograms.items():
             # Normalize (if specified in histograms dict)
@@ -108,7 +106,7 @@ class AnomalyDetectionAlgorithm():
                     if histogram_info["n_dim"] == 2:
                         #print(len(df[histogram]),len(df[histogram][0]),len(df[histogram][0][0]))
                         logger.debug("[anomaly_detection_algorithm : load_data] Rebinning and normalising the 2D histogram '%s'" % histogram)
-                        df[histogram], hist_integral = rebinning_min_occupancy(df[histogram], 0.001)
+                        df[histogram], hist_integral = rebinning_min_occupancy_2d(df[histogram], 0.01)
                         new_shape = (len(df[histogram][0]),)
                         self.histograms[histogram]["shape"] = new_shape
                         self.histograms[histogram]["n_dim"] = len(new_shape)
@@ -122,15 +120,15 @@ class AnomalyDetectionAlgorithm():
                     else:
                         sum = awkward.sum(df[histogram], axis = -1)
                         hist_integral = sum
-                        logger.debug("[anomaly_detection_algorithm : load_data] Normalising the 1D histogram '%s' by the sum of total entries." % histogram)
-                        hist_original = df[histogram]
+                        #logger.debug("[anomaly_detection_algorithm : load_data] Normalising the 1D histogram '%s' by the sum of total entries." % histogram)
                         df[histogram] = df[histogram] * (1. / sum)
+                        logger.debug("[anomaly_detection_algorithm : load_data] Rebinning and normalising the 1D histogram '%s'" % histogram)
+                        df[histogram] = rebinning_min_occupancy_1d(df[histogram], 0.001)
                         mean_histogram = awkward.mean(df[histogram], axis=0)
                         df[histogram] = awkward.Array([arr - mean_histogram for arr in df[histogram]])
                         logger.debug("[anomaly_detection_algorithm : load_data] Now calculating the mean of this 1D histogram and subtracting this from each individual rebinned and normalised histogram '%s'" % histogram)
             hist_integrals.append(numpy.array(hist_integral).ravel())
             hist_means.append(mean_histogram)
-            hist_originals.append(hist_original)
 
         self.n_train = awkward.sum(df.label == 0)
         self.n_bad_runs = awkward.sum(df.label != 0)
@@ -138,7 +136,6 @@ class AnomalyDetectionAlgorithm():
         self.n_histograms = len(list(self.histograms.keys()))
         self.integrals = hist_integrals
         self.means = hist_means
-        self.originals = hist_originals
 
         logger.debug("[AnomalyDetectionAlgorithm : load_data] Loaded data for %d histograms with %d events in training set, excluding the %d bad runs." % (self.n_histograms, self.n_train, self.n_bad_runs))
 
