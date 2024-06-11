@@ -138,9 +138,6 @@ class AnomalyDetectionAlgorithm():
         self.n_histograms = len(list(self.histograms.keys()))
         self.integrals = hist_integrals
         self.means = hist_means
-        print("LENGTH OF HISTMEANS IN ADA")
-        for mean_val in self.means:
-          print(len(mean_val))
 
         logger.debug("[AnomalyDetectionAlgorithm : load_data] Loaded data for %d histograms with %d events in training set, excluding the %d bad runs." % (self.n_histograms, self.n_train, self.n_bad_runs))
 
@@ -152,10 +149,10 @@ class AnomalyDetectionAlgorithm():
         Add fields to the df containing the score for this algorithm (p-value/pull-value for statistical tests, sse for ML algorithms)
         and the reconstructed histograms (for ML algorithms only).
         """
+        if reconstructed_hist is not None:
+            self.df[histogram + "_reco_" + self.tag] = reconstructed_hist
+
         self.df[histogram + "_score_" + self.tag] = score * len(self.df[histogram][0])
-        #print("HIST SHAPE")
-        #print(len(self.df[histogram]))
-        #print(len(self.df[histogram][0]))
 
     def save(self, histograms = {}, tag = "", algorithm = "", reco_assess_plots = False):
         """
@@ -191,14 +188,17 @@ class AnomalyDetectionAlgorithm():
         chi2_tol1_all_hists = []
         maxpull_tol1_all_hists = []
 
-        print("WE'RE NOW SAVING SO EVERYTHING SHOULD BE HERE AS BLOODY NORMAL...")
-        print(chi2df)
         for hist_iter in range(len(desired_hists_for_study)):
             data_raw = chi2df[desired_hists_for_study[hist_iter]] * self.integrals[hist_iter][:, numpy.newaxis]
             ref_raw = numpy.array(chi2df[reco_columns[hist_iter]] * 100*self.integrals[hist_iter][:, numpy.newaxis])
             ref_raw[ref_raw < 0] = 0
             ref_list_raw = numpy.array([[subarray] for subarray in ref_raw])
             #run_list = self.df['run_number']
+            if hist_iter == 0:
+                print("data_raw")
+                print(data_raw)
+                print("ref_raw")
+                print(ref_raw)
         
             chi2_tol0_vals = []
             maxpull_tol0_vals = []

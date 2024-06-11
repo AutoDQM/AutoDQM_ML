@@ -159,20 +159,12 @@ class PCA(MLAlgorithm):
             # Reconstruct histogram from latent space representation
             reconstructed_hist = pca.inverse_transform(original_hist_transformed)
 
-            print("THIS IS IN THE AE CODE")
-            print("ORIGINAL HIST SIZE")
-            print(len(original_hist[0]))
-            print("RECO HIST SIZE")
-            print(len(reconstructed_hist[0]))
-            print("MEANS SIZE")
-            print(len(self.means[indxx]))
+            #original_hist = awkward.Array(self.means[indxx] for _ in original_hist)
+            original_hist = awkward.Array([arr + self.means[indxx] for arr in original_hist])
+            if indxx == 0:
+                print(self.means[indxx])
 
-            print("THIS IS THE SAME AS BEFORE")
-            print(self.means[indxx])
-
-            #print("NO REASON FOR IT NOT WORKING HERE")
-            #original_hist = awkward.Array([arr + self.means[indxx] for arr in original_hist])
-            #reconstructed_hist = awkward.Array([arr + self.means[indxx] for arr in reconstructed_hist])
+            reconstructed_hist = awkward.Array([arr + self.means[indxx] for arr in reconstructed_hist])
             indxx = indxx + 1
 
             # Calculate sse
@@ -180,6 +172,8 @@ class PCA(MLAlgorithm):
                     (original_hist - reconstructed_hist) ** 2,
                     axis = -1
             )
+
+            self.df[histogram] = original_hist
 
             self.add_prediction(histogram, sse, reconstructed_hist)
 

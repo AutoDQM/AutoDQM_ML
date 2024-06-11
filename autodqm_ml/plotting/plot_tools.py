@@ -53,11 +53,11 @@ def make_sse_plot(name, recos, save_name, **kwargs):
     plt.clf()
 
 
-def make_original_vs_reconstructed_plot(name, original, recos, run, save_name, hist_layout, **kwargs): 
+def make_original_vs_reconstructed_plot(name, original, recos, mean_hist, run, save_name, hist_layout, **kwargs): 
     n_dim = len(np.array(original).shape)
 
     if n_dim == 1:
-        make_original_vs_reconstructed_plot1d(name, original, recos, run, save_name, **kwargs)
+        make_original_vs_reconstructed_plot1d(name, original, recos, mean_hist, run, save_name, **kwargs)
 
     elif n_dim == 2:
         if hist_layout == 'flatten':
@@ -81,18 +81,23 @@ def make_original_vs_reconstructed_plot(name, original, recos, run, save_name, h
         logger.exception(message)
         raise RuntimeError()
 
-def make_original_vs_reconstructed_plot1d(name, original, recos, run, save_name, **kwargs):
+def make_original_vs_reconstructed_plot1d(name, original, recos, mean_hist, run, save_name, **kwargs):
     bins = "%s, 0, 1" % (len(original))
     x_label = name + " (a.u.)"
     y_label = "Fraction of events"
     
-    rat_lim = kwargs.get("rat_lim", [-0.025, 0.025])
+    rat_lim = kwargs.get("rat_lim", [-0.0008, 0.0008])
     log_y = kwargs.get("log_y", False)
 
     h_orig = Hist1D(original, bins = bins, label = "Run " + str(run) + " data")
     h_orig._counts = original
+
+    h_mean = Hist1D(mean_hist, bins = bins, label = "Run " + str(run) + " mean")
+    h_mean._counts = mean_hist
+
     h_reco = []
-   
+    h_reco_no_mean = []
+
     for reco, info in recos.items():
         if "pca" in reco.lower():
             algo_name = "PCA reconstruction"
@@ -101,10 +106,17 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, run, save_name,
         else:
             algo_name = "Reconstruction"
 
-        #h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE $\times$ 1000 = " + str("{:.3g}".format(1000*info["score"])))
-        h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE = " + str("{:.3g}".format(info["score"])))
+        #h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE $\times$ 1000 = " + str("{:.3g}".format(1000*info["score"]))) # This is just for the paper
+        #h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE = " + str("{:.3g}".format(info["score"])))
+        h = Hist1D(info["reco"], bins = bins, label = algo_name + " (ML + mean) \n" + r"SSE = " + str("{:.3g}".format(info["score"])))
+
+        hnomean_info = info["reco"] - mean_hist
+        hnomean = Hist1D(hnomean_info, bins = bins, label = algo_name + " (ML reco only)")
+
         h._counts = info["reco"]
         h_reco.append(h)
+        hnomean._counts = hnomean_info
+        h_reco_no_mean.append(hnomean)
 
     fig, (ax1,ax2) = plt.subplots(2, sharex=True, figsize=(8,6), gridspec_kw=dict(height_ratios=[3, 1]))
     plt.grid()
@@ -112,10 +124,18 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, run, save_name,
     h_orig.plot(ax=ax1, color="black", errors = False, linewidth=2)
     plt.sca(ax1)
 
+    h_mean.plot(ax=ax1, color="red", errors = False, linewidth=2)
+
     for idx, h in enumerate(h_reco):
         if "pca" in save_name.lower(): idx = idx + 1
         if ("ae" in save_name.lower()) or ("autoencoder" in save_name.lower()): idx = idx
         h.plot(ax=ax1, color = "C%d" % (idx+1), errors = False, linewidth=2)
+
+    # for no mean ML output on main plot
+    for idx, h in enumerate(h_reco_no_mean):
+        if "pca" in save_name.lower(): idx = idx + 1
+        if ("ae" in save_name.lower()) or ("autoencoder" in save_name.lower()): idx = idx
+        h.plot(ax=ax1, color = "blue", errors = False, linewidth=2)
 
     for idx, h in enumerate(h_reco):
         if "pca" in save_name.lower(): idx = idx + 1
@@ -130,14 +150,17 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, run, save_name,
     #legend.set_bbox_to_anchor((0.5, 0.9))
     for text in legend.get_texts():
         text.set_fontsize(universal_font_size)
-    ax2.set_ylabel("Data - Reconstruction", fontsize = universal_font_size)
+    #ax2.set_ylabel("Data - Reconstruction", fontsize = universal_font_size)
+    ax2.set_ylabel("Data - Reco (ML + mean)", fontsize = universal_font_size)
     ax2.set_xlabel(x_label, fontsize = universal_font_size)
     #ax2.set_xlabel(r"L1T muon $\eta$", fontsize = universal_font_size)
     ax2.set_ylim(rat_lim)
 
     xticks = [0.0,0.2,0.4,0.6,0.8,1.0]
-    ticklabels = ['-2.5', '-1.5', '-0.5', '0.5', '1.5', '2.5']
+    #ticklabels = ['-2.5', '-1.5', '-0.5', '0.5', '1.5', '2.5']
+    ticklabels = ['0.01', '1.01', '2.01', '3.01', '4.01', '5.01']
     plt.xticks(xticks, ticklabels)
+    plt.xscale("log")
 
     plt.gca().xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
 
