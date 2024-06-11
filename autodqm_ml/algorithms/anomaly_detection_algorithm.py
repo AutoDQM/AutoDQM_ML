@@ -106,11 +106,6 @@ class AnomalyDetectionAlgorithm():
             if "normalize" in histogram_info.keys():
                 if histogram_info["normalize"]:
                     if histogram_info["n_dim"] == 2:
-                        '''
-                        sum = awkward.sum(df[histogram], axis = -1)
-                        sum = awkward.sum(sum, axis = -1)
-                        df[histogram] = df[histogram] * (1. / sum)
-                        '''
                         #print(len(df[histogram]),len(df[histogram][0]),len(df[histogram][0][0]))
                         logger.debug("[anomaly_detection_algorithm : load_data] Rebinning and normalising the 2D histogram '%s'" % histogram)
                         df[histogram], hist_integral = rebinning_min_occupancy(df[histogram], 0.001)
@@ -193,24 +188,23 @@ class AnomalyDetectionAlgorithm():
         maxpull_tol0_all_hists = []
         chi2_tol1_all_hists = []
         maxpull_tol1_all_hists = []
+        data_raw_all_hists = []
+        ref_raw_all_hists = []
 
-        print(len(self.originals))
         for hist_iter in range(len(desired_hists_for_study)):
-            data_raw = self.originals[hist_iter] * self.integrals[hist_iter][:, numpy.newaxis]
+            data_raw = chi2df[desired_hists_for_study[hist_iter]] * self.integrals[hist_iter][:, numpy.newaxis]
             ref_raw = numpy.array(chi2df[reco_columns[hist_iter]] * 100*self.integrals[hist_iter][:, numpy.newaxis])
             ref_raw[ref_raw < 0] = 0
             ref_list_raw = numpy.array([[subarray] for subarray in ref_raw])
-            #run_list = self.df['run_number']
-            if hist_iter == 0:
-                print("data_raw")
-                print(data_raw)
-                print("ref_raw")
-                print(ref_raw)
-        
+            run_list = self.df['run_number']
+
             chi2_tol0_vals = []
             maxpull_tol0_vals = []
             chi2_tol1_vals = []
             maxpull_tol1_vals = []
+            data_hist_raw_vals = []
+            ref_hist_raw_vals = []
+
             for run in range(len(data_raw)):
                 data_hist_raw = numpy.round(numpy.copy(numpy.float64(data_raw[run])))
                 ref_hists_raw = numpy.round(numpy.array([numpy.copy(numpy.float64(ref_list_raw[run]))]))
@@ -229,10 +223,20 @@ class AnomalyDetectionAlgorithm():
                 maxpull_tol0_vals.append(maxpull_tol0_AB)
                 chi2_tol1_vals.append(chi2_tol1_AB)
                 maxpull_tol1_vals.append(maxpull_tol1_AB)
+                data_hist_raw_vals.append(numpy.array(data_hist_raw))
+                ref_hist_raw_vals.append(numpy.array(ref_hists_raw[0][0]))
+                #if run < 3:
+                #    print("data")
+                #    print(data_hist_raw)
+                #    print("ref")
+                #    print(ref_hists_raw[0][0])
+                
             chi2_tol0_all_hists.append(chi2_tol0_vals)
             maxpull_tol0_all_hists.append(maxpull_tol0_vals)
             chi2_tol1_all_hists.append(chi2_tol1_vals)
             maxpull_tol1_all_hists.append(maxpull_tol1_vals)
+            data_raw_all_hists.append(numpy.array(data_raw))
+            ref_raw_all_hists.append(numpy.array(ref_raw))
 
         self.df = awkward.zip(filtered_fields)
         chi2df = awkward.zip(chi2_filtered_fds)
@@ -244,7 +248,7 @@ class AnomalyDetectionAlgorithm():
             for run in range(len(integ_info)):
                 integ_value = numpy.sum(numpy.copy(numpy.array(integ_info[run])))
                 #if reco_df["run_number"][run] == 361365:
-                #    #print(reco_df["run_number"][run])
+                #    print(reco_df["run_number"][run])
                 #    print(desired_hists_for_study[hist_iter] + "," + str(integ_value))
                 integrals_for_each_run.append(integ_value)
             complete_set_of_integrals.append(integrals_for_each_run)
@@ -272,12 +276,14 @@ class AnomalyDetectionAlgorithm():
             maxpull_tol0_field = awkward.Array(maxpull_tol0_all_hists[hist_iter])
             chi2_tol1_field = awkward.Array(chi2_tol1_all_hists[hist_iter])
             maxpull_tol1_field = awkward.Array(maxpull_tol1_all_hists[hist_iter])
+            data_raw_field = awkward.Array(data_raw_all_hists[hist_iter])
+            ref_raw_field = awkward.Array(ref_raw_all_hists[hist_iter])
             chi2df = awkward.with_field(chi2df, chi2_tol0_field, desired_hists_for_study[hist_iter] + "_chi2_tol0")
             chi2df = awkward.with_field(chi2df, maxpull_tol0_field, desired_hists_for_study[hist_iter] + "_maxpull_tol0")
             chi2df = awkward.with_field(chi2df, chi2_tol1_field, desired_hists_for_study[hist_iter] + "_chi2_tol1")
             chi2df = awkward.with_field(chi2df, maxpull_tol1_field, desired_hists_for_study[hist_iter] + "_maxpull_tol1")
-            #chi2df = awkward.with_field(chi2df, data_raw, desired_hists_for_study[hist_iter] + "_original")
-            #chi2df = awkward.with_field(chi2df, ref_raw, desired_hists_for_study[hist_iter] + "_prediction")
+            chi2df = awkward.with_field(chi2df, data_raw_field, desired_hists_for_study[hist_iter] + "_original")
+            chi2df = awkward.with_field(chi2df, ref_raw_field, desired_hists_for_study[hist_iter] + "_prediction")
             chi2df = awkward.with_field(chi2df, self.integrals[hist_iter], desired_hists_for_study[hist_iter] + "_integral")
 
         complete_set_of_integrals = numpy.array(complete_set_of_integrals)
