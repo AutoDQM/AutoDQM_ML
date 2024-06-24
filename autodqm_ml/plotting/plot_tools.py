@@ -49,7 +49,7 @@ def make_sse_plot(name, recos, save_name, **kwargs):
 
     logger.debug("[plot_tools.py : make_sse_plot] Writing plot to file '%s'." % (save_name))
     plt.savefig(save_name)
-    plt.savefig(save_name.replace(".pdf", ".png"))
+    #plt.savefig(save_name.replace(".pdf", ".png"))
     plt.clf()
 
 
@@ -147,7 +147,7 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, run, save_name,
 
     logger.debug("[plot_tools.py : make_original_vs_reconstructed_plot1d] Writing plot to file '%s'. " % (save_name))
     plt.savefig(save_name)
-    plt.savefig(save_name.replace(".pdf", ".png"))
+    #plt.savefig(save_name.replace(".pdf", ".png"))
     plt.clf()
 
 def make_original_vs_reconstructed_plot2d(name, original, recos, run, save_name, **kwargs):
@@ -209,7 +209,7 @@ def make_original_vs_reconstructed_plot2d(name, original, recos, run, save_name,
 
     logger.debug("[plot_tools.py : make_original_vs_reconstructed_plot1d] Writing plot to file '%s'. " % (save_name))
     plt.savefig(save_name, bbox_inches='tight')
-    plt.savefig(save_name.replace(".pdf", ".png"), bbox_inches='tight')
+    #plt.savefig(save_name.replace(".pdf", ".png"), bbox_inches='tight')
     plt.clf()
     
 def plot1D(original_hist, reconstructed_hist, run, hist_path, algo, threshold):    
@@ -246,14 +246,14 @@ def plot1D(original_hist, reconstructed_hist, run, hist_path, algo, threshold):
     ax.text(.8, 0.1*max(original_hist.max(), reconstructed_hist.max()), text, wrap=True, bbox=props )
     # create directory to save plot
     Path(f'plots/{algo}/{run}').mkdir(parents=True, exist_ok=True)
-    fig.savefig(f'plots/{algo}/{run}/{plotname}.png')
+    #fig.savefig(f'plots/{algo}/{run}/{plotname}.png')
     plt.close('all')
     
     if mse > threshold: 
         fig2, ax2 = plt.subplots()
         ax2.bar(binEdges, np.square(original_hist - reconstructed_hist), alpha=0.5, width=width)
         ax2.set_title(f'MSE {plotname} {run}')
-        fig2.savefig(f'plots/{algo}/{run}/{plotname}-MSE.png')
+        #fig2.savefig(f'plots/{algo}/{run}/{plotname}-MSE.png')
         plt.close('all')
     
 
@@ -311,7 +311,7 @@ def plotMSESummary(original_hists, reconstructed_hists, threshold, hist_paths, r
     props = dict(boxstyle='round', facecolor='white', alpha=0.5)
     ax.text(1.1*max(mse), 0.5*max(hist), text, wrap=True, bbox=props)
     
-    fig.savefig(f'plots/{algo}/MSE_Summary.png', bbox_inches='tight')
+    #fig.savefig(f'plots/{algo}/MSE_Summary.png', bbox_inches='tight')
 
 
 def plot_roc_curve(h_name, results, save_name, **kwargs):
@@ -354,7 +354,7 @@ def plot_roc_curve(h_name, results, save_name, **kwargs):
 
     logger.debug("[plot_tools.py : plot_roc_curve] Writing plot to file '%s'." % (save_name))
     plt.savefig(save_name)
-    plt.savefig(save_name.replace(".pdf", ".png"))
+    #plt.savefig(save_name.replace(".pdf", ".png"))
     plt.clf()
 
 def plot_rescaled_score_hist(data, hist, savename):
@@ -388,7 +388,7 @@ def plot_rescaled_score_hist(data, hist, savename):
     fig.suptitle(hist)
     axes[0].legend(loc="upper center",fontsize=universal_font_size)
     axes[0].set_title('Min-Max Scaled Anomaly Scores')
-    fig.savefig(savename, bbox_inches = 'tight')
+    #fig.savefig(savename, bbox_inches = 'tight')
     fig.savefig(savename.replace('.png', '.pdf'), bbox_inches = 'tight')
     
 def make_training_plots(history, hist, save_file):
@@ -424,7 +424,7 @@ def multi_exp_plots(paths, xlabel, x, title, legend = None, logx = False, logy =
         #print(savepath)
     else:
         make_one_var_exp_plots(paths, xlabel, x, axes, legend, logx)
-        plt.savefig(paths + 'plots.png', bbox_inches = 'tight')
+        #plt.savefig(paths + 'plots.png', bbox_inches = 'tight')
 
 def make_one_var_exp_plots(path, xlabel, x, axes, label = None, logx = False):
     data = {'Epochs Trained':[], 'Epochs Trained Std':[],
@@ -487,7 +487,7 @@ def multi_exp_bar_plots(paths, xlabel, title, legend = None):
     else:
         
         make_one_var_exp_bar_plots(paths, xlabel, axes, 0, b, s, 1, legend[0])
-        plt.savefig(paths + 'plots.png', bbox_inches = 'tight')
+        #plt.savefig(paths + 'plots.png', bbox_inches = 'tight')
 
 def make_one_var_exp_bar_plots(path, xlabel, axes, i, b, s, n, label = None):
     data = {'Epochs Trained':[], 'Epochs Trained Std':[],
