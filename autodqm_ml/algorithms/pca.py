@@ -148,7 +148,6 @@ class PCA(MLAlgorithm):
         """
 
         """
-        indxx = 0
         for histogram, histogram_info in self.histograms.items():
             pca = self.model[histogram]
             
@@ -158,22 +157,11 @@ class PCA(MLAlgorithm):
 
             # Reconstruct histogram from latent space representation
             reconstructed_hist = pca.inverse_transform(original_hist_transformed)
-
-            #original_hist = awkward.Array(self.means[indxx] for _ in original_hist)
-            original_hist = awkward.Array([arr + self.means[indxx] for arr in original_hist])
-            if indxx == 0:
-                print(self.means[indxx])
-
-            reconstructed_hist = awkward.Array([arr + self.means[indxx] for arr in reconstructed_hist])
-            indxx = indxx + 1
-
+            
             # Calculate sse
             sse = awkward.sum(
                     (original_hist - reconstructed_hist) ** 2,
                     axis = -1
             )
 
-            self.df[histogram] = original_hist
-
             self.add_prediction(histogram, sse, reconstructed_hist)
-

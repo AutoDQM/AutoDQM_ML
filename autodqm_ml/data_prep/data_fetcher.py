@@ -204,6 +204,7 @@ class DataFetcher():
 
                 self.files[pd][year] = unique_files
                 self.files["all"] += unique_files
+                print(self.files)
 
     @staticmethod
     def construct_eos_path(base_path, pd, year):
@@ -251,6 +252,8 @@ class DataFetcher():
                 if datasets["runs"] is not None:
                     if not any(run in file for run in datasets["runs"]): # check if file matches any of the specified runs
                         continue
+                if "2022A" in file:
+                    continue
                 files.append(file)
             else: # this is a subdir or not a root file
                 if datasets["runs"] is not None:
@@ -287,15 +290,10 @@ class DataFetcher():
                     if self.datasets[year]["bad_runs"] is not None:
                         if str(run_number) in self.datasets[year]["bad_runs"]:
                             label = 1 # bad/anomalous
-                        #elif self.datasets[year]["good_runs"] is not None:
-                        else:
-                            label = 0 # if only bad_runs was specified, mark everything not in bad_runs as good
-
-                    #if self.datasets[year]["good_runs"] is not None:
-                    #    if str(run_number) in self.datasets[year]["good_runs"]:
-                    #        label = 0 # good/not anomalous
-                    #    elif self.datasets[year]["bad_runs"] is None:
-                    #        label = 1 # if only good_runs was specified, mark everything not in good_runs as bad
+                    
+                    if self.datasets[year]["good_runs"] is not None:
+                        if str(run_number) in self.datasets[year]["good_runs"]:
+                            label = 0
 
                     logger.debug("[DataFetcher : load_data] Loading histograms from file %s, run %d" % (file, run_number))
 

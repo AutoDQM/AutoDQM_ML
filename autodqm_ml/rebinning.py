@@ -115,21 +115,21 @@ def rebinning_min_occupancy_2d(df_ver_hist, min_occ_threshold):
     #assert_allclose(sum(combined_hist), len(hist), atol=1e-3)
     track_merges = []
     new_comb_hist, track_merges = merge_below_threshold_with_indices(combined_hist, min_occ_threshold * len(hist)) # / (0.2*np.log10(len(flattened_hist[0]))))
-    #print("STARTING FULL MANIPULATION PROGRAMMING")
-    #print("ORIGINAL HISTOGRAM DIMENSIONS MULITPLIED: ",len(hist[0])*len(hist[0][0]))
-    #print("LENGTH OF MODIFIED HISTOGRAM THAT SURVIVES THRESHOLD SELECTION: ", len(new_comb_hist))
-    #print('NUMBER OF INTENDED TRACK MERGES: ', len(track_merges))
+    print("STARTING 2D REBINNING")
+    print("ORIGINAL HISTOGRAM DIMENSIONS MULITPLIED: ",len(hist[0])*len(hist[0][0]))
+    print("LENGTH OF MODIFIED HISTOGRAM THAT SURVIVES THRESHOLD SELECTION: ", len(new_comb_hist))
+    print('NUMBER OF INTENDED TRACK MERGES: ', len(track_merges))
     number_of_first_empty, track_merges = count_instances_before_first_pair_changes(track_merges)
-    #print("NUMBER OF FIRST BINS BELOW OCC THRESHOLD: ",number_of_first_empty)
-    #print("NUMBER OF MERGES REMAINING: ",len(track_merges))
+    print("NUMBER OF FIRST BINS BELOW OCC THRESHOLD: ",number_of_first_empty)
+    print("NUMBER OF MERGES REMAINING: ",len(track_merges))
     number_of_last_empty, track_merges = count_instances_before_last_pair_changes(track_merges,len(combined_hist))
-    #print("NUMBER OF LAST BINS BELOW OCC THRESHOLD: ",number_of_last_empty)
-    #print("NUMBER OF MERGES REMAINING: ",len(track_merges))
+    print("NUMBER OF LAST BINS BELOW OCC THRESHOLD: ",number_of_last_empty)
+    print("NUMBER OF MERGES REMAINING: ",len(track_merges))
     flattened_hist = merge_first_n_bins(flattened_hist,number_of_first_empty)
     flattened_hist = merge_last_n_bins(flattened_hist,number_of_last_empty)
-    #print("BEFORE FULL MERGE, HISTOGRAMS ARE OF LENGTH ",len(flattened_hist[0]))
+    print("BEFORE FULL MERGE, HISTOGRAMS ARE OF LENGTH ",len(flattened_hist[0]))
     merged_flattened_hist = merge_bins_in_arrays(flattened_hist, track_merges, number_of_first_empty)
-    #print("AFTER FULL MERGE, HISTOGRAMS ARE OF LENGTH ",len(merged_flattened_hist[0]))
+    print("AFTER FULL MERGE, HISTOGRAMS ARE OF LENGTH ",len(merged_flattened_hist[0]))
 
     return merged_flattened_hist, original_hist_integral
 
@@ -144,7 +144,7 @@ def rebinning_min_occupancy_1d(df_ver_hist_prenormalised, min_occ_threshold):
     track_merges = []
 
     new_comb_hist, track_merges = merge_below_threshold_with_indices(combined_hist, min_occ_threshold * len(hist)) # / (0.2*np.log10(len(flattened_hist[0]))))
-    print("STARTING FULL MANIPULATION PROGRAMMING")
+    print("STARTING 1D REBINNING")
     print("ORIGINAL HISTOGRAM DIMENSIONS: ",len(hist[0]))
     print("LENGTH OF MODIFIED HISTOGRAM THAT SURVIVES THRESHOLD SELECTION: ", len(new_comb_hist))
     print('NUMBER OF INTENDED TRACK MERGES: ', len(track_merges))
