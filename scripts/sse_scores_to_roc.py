@@ -218,16 +218,6 @@ def main(args):
   print("SAVED: " + args.output_dir + "/RF_ROC_comparison_Nvar_" + algorithm_name + ".pdf")
 
 
-
-
-
-
-
-
-
-
-
-
 if __name__ == "__main__":
   args = parse_arguments()
   main(args)

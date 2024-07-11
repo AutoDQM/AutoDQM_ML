@@ -103,12 +103,17 @@ def merge_bins_in_arrays(array_of_arrays, pairs_of_indices, empty_bins_removed):
 def rebinning_min_occupancy_2d(df_ver_hist, min_occ_threshold):
     hist = np.array(df_ver_hist)
     number_of_first_empty = 0
-    normalized_hist = hist / np.sum(hist, axis=(1, 2), keepdims=True)
-    #print(np.sum(hist, axis=(1, 2), keepdims=True))
+    hist = np.nan_to_num(hist, nan=0.0)
     original_hist_integral = np.sum(hist, axis=(1, 2), keepdims=True)
+    #print(original_hist_integral)
+    original_hist_integral[original_hist_integral == 0] = 1
+    #print(original_hist_integral)
+    normalized_hist = hist / original_hist_integral
+    #print(normalized_hist)
     #print("Normalised hist shape:", normalized_hist.shape) # normalise histogram shape
     flattened_hist = normalized_hist.reshape(len(hist), -1)
     print("Flattened Shape:", flattened_hist.shape)
+    print("THIS IS THE RESULT IN THE 2D PROGRAM")
     combined_hist = np.sum(flattened_hist, axis=0)
     #print("Combined Shape:", combined_hist.shape) # XXX bins per hist, and totals number of hists (308)
     hist_copy = hist.reshape(len(hist), -1)
@@ -127,18 +132,20 @@ def rebinning_min_occupancy_2d(df_ver_hist, min_occ_threshold):
     print("NUMBER OF MERGES REMAINING: ",len(track_merges))
     flattened_hist = merge_first_n_bins(flattened_hist,number_of_first_empty)
     flattened_hist = merge_last_n_bins(flattened_hist,number_of_last_empty)
-    print("BEFORE FULL MERGE, HISTOGRAMS ARE OF LENGTH ",len(flattened_hist[0]))
+    print("BEFORE FULL MERGE, HISTOGRAMS ARE OF LENGTH "+str(len(flattened_hist[0]))+" and should be equal to "+str(len(hist[0])))
     merged_flattened_hist = merge_bins_in_arrays(flattened_hist, track_merges, number_of_first_empty)
     print("AFTER FULL MERGE, HISTOGRAMS ARE OF LENGTH ",len(merged_flattened_hist[0]))
 
     return merged_flattened_hist, original_hist_integral
+    #return flattened_hist, original_hist_integral
 
 def rebinning_min_occupancy_1d(df_ver_hist_prenormalised, min_occ_threshold):
     hist = np.array(df_ver_hist_prenormalised)
+    hist = np.nan_to_num(hist, nan=0.0)
     number_of_first_empty = 0
-
     flattened_hist = hist.reshape(len(hist), -1)
     print("Flattened Shape:", flattened_hist.shape)
+    print("THIS IS THE RESULT IN THE 1D PROGRAM")
     combined_hist = np.sum(flattened_hist, axis=0)
     hist_copy = hist.reshape(len(hist), -1)
     track_merges = []
@@ -156,8 +163,9 @@ def rebinning_min_occupancy_1d(df_ver_hist_prenormalised, min_occ_threshold):
     print("NUMBER OF MERGES REMAINING: ",len(track_merges))
     flattened_hist = merge_first_n_bins(flattened_hist,number_of_first_empty)
     flattened_hist = merge_last_n_bins(flattened_hist,number_of_last_empty)
-    print("BEFORE FULL MERGE, HISTOGRAMS ARE OF LENGTH ",len(flattened_hist[0]))
+    print("BEFORE FULL MERGE, HISTOGRAMS ARE OF LENGTH "+str(len(flattened_hist[0]))+" and should be equal to "+str(len(hist[0])))
     merged_flattened_hist = merge_bins_in_arrays(flattened_hist, track_merges, number_of_first_empty)
     print("AFTER FULL MERGE, HISTOGRAMS ARE OF LENGTH ",len(merged_flattened_hist[0]))
 
     return merged_flattened_hist
+    #return flattened_hist

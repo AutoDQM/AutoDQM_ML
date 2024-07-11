@@ -120,6 +120,7 @@ class AnomalyDetectionAlgorithm():
                         #logger.debug("[anomaly_detection_algorithm : load_data] Normalising the 1D histogram '%s' by the sum of total entries." % histogram)
                         df[histogram] = df[histogram] * (1. / sum)
                         logger.debug("[anomaly_detection_algorithm : load_data] Rebinning and normalising the 1D histogram '%s'" % histogram)
+                        print(df[histogram])
                         df[histogram] = rebinning_min_occupancy_1d(df[histogram], 0.001)
                         hist_reco_size = len(df[histogram][0])
                         logger.debug("[anomaly_detection_algorithm : load_data] Now calculating the mean of this 1D histogram and subtracting this from each individual rebinned and normalised histogram '%s'" % histogram)
@@ -134,7 +135,7 @@ class AnomalyDetectionAlgorithm():
         self.integrals = hist_integrals
         self.reco_sizes = hist_reco_sizes
 
-        logger.debug("[AnomalyDetectionAlgorithm : load_data] Loaded data for %d histograms with %d events in training set, excluding the %d bad runs." % (self.n_histograms, self.n_train, self.n_bad_runs))
+        logger.debug("[AnomalyDetectionAlgorithm : load_data] Loaded data for %d histograms with %d events in training set, excluding the %d test runs and %d bad runs." % (self.n_histograms, self.n_train, self.n_test, self.n_bad_runs))
 
         self.data_is_loaded = True
 

@@ -204,7 +204,7 @@ class DataFetcher():
 
                 self.files[pd][year] = unique_files
                 self.files["all"] += unique_files
-                print(self.files)
+                #print(self.files)
 
     @staticmethod
     def construct_eos_path(base_path, pd, year):
@@ -252,8 +252,8 @@ class DataFetcher():
                 if datasets["runs"] is not None:
                     if not any(run in file for run in datasets["runs"]): # check if file matches any of the specified runs
                         continue
-                if "2022A" in file:
-                    continue
+                #if "2022A" in file:
+                #    continue
                 files.append(file)
             else: # this is a subdir or not a root file
                 if datasets["runs"] is not None:
