@@ -163,7 +163,7 @@ def rebinning_min_occupancy_1d(df_ver_hist_prenormalised, min_occ_threshold):
     print("NUMBER OF MERGES REMAINING: ",len(track_merges))
     flattened_hist = merge_first_n_bins(flattened_hist,number_of_first_empty)
     flattened_hist = merge_last_n_bins(flattened_hist,number_of_last_empty)
-    print("BEFORE FULL MERGE, HISTOGRAMS ARE OF LENGTH "+str(len(flattened_hist[0]))+" and should be equal to "+str(len(hist[0])))
+    print("BEFORE FULL MERGE, HISTOGRAMS ARE OF LENGTH "+str(len(hist[0])))
     merged_flattened_hist = merge_bins_in_arrays(flattened_hist, track_merges, number_of_first_empty)
     print("AFTER FULL MERGE, HISTOGRAMS ARE OF LENGTH ",len(merged_flattened_hist[0]))
 

@@ -30,7 +30,7 @@ def parse_arguments():
   )
   parser.add_argument(
     "--input_file",
-    help = "input file (i.e. output from fetch_data.py) to use for training the ML algorithm",
+    help = "input file (i.e. output csv file from train.py)",
     type = str,
     required = True,
     default = None

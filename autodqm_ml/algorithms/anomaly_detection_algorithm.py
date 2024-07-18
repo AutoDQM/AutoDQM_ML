@@ -88,6 +88,7 @@ class AnomalyDetectionAlgorithm():
         for histogram, histogram_info in self.histograms.items():
             self.histograms[histogram]["name"] = histogram.replace("/", "").replace(" ","")
             self.histogram_name_map[self.histograms[histogram]["name"]] = histogram
+            print(self.histograms[histogram]["name"])
 
             a = awkward.to_numpy(df[histogram][0])
             self.histograms[histogram]["shape"] = a.shape
@@ -98,31 +99,33 @@ class AnomalyDetectionAlgorithm():
 
         hist_integrals = []
         hist_reco_sizes = []
-        #print(self.histograms[histogram]["name"])
         for histogram, histogram_info in self.histograms.items():
             # Normalize (if specified in histograms dict)
             if "normalize" in histogram_info.keys():
                 if histogram_info["normalize"]:
                     if histogram_info["n_dim"] == 2:
+                        #print(f"2D,{histogram}")
                         #print(len(df[histogram]),len(df[histogram][0]),len(df[histogram][0][0]))
                         logger.debug("[anomaly_detection_algorithm : load_data] Rebinning and normalising the 2D histogram '%s'" % histogram)
-                        df[histogram], hist_integral = rebinning_min_occupancy_2d(df[histogram], 0.001)
+                        df[histogram], hist_integral = rebinning_min_occupancy_2d(df[histogram], 0.0033)
                         new_shape = (len(df[histogram][0]),)
                         self.histograms[histogram]["shape"] = new_shape
                         self.histograms[histogram]["n_dim"] = len(new_shape)
                         self.histograms[histogram]["n_bins"] = len(df[histogram][0])
-                        #hist_original = df[histogram]
                         hist_reco_size = len(df[histogram][0])
                         logger.debug("[anomaly_detection_algorithm : load_data] Now calculating the mean of this 2D histogram and subtracting this from each individual rebinned and normalised histogram '%s'" % histogram)
                     else:
+                        #print(f"1D,{histogram}")
                         sum = awkward.sum(df[histogram], axis = -1)
                         hist_integral = sum
                         #logger.debug("[anomaly_detection_algorithm : load_data] Normalising the 1D histogram '%s' by the sum of total entries." % histogram)
                         df[histogram] = df[histogram] * (1. / sum)
                         logger.debug("[anomaly_detection_algorithm : load_data] Rebinning and normalising the 1D histogram '%s'" % histogram)
                         print(df[histogram])
-                        df[histogram] = rebinning_min_occupancy_1d(df[histogram], 0.001)
+                        df[histogram] = rebinning_min_occupancy_1d(df[histogram], 0.0033)
                         hist_reco_size = len(df[histogram][0])
+                        print(len(df[histogram]))
+                        print(len(df[histogram][0]))
                         logger.debug("[anomaly_detection_algorithm : load_data] Now calculating the mean of this 1D histogram and subtracting this from each individual rebinned and normalised histogram '%s'" % histogram)
             hist_integrals.append(numpy.array(hist_integral).ravel())
             hist_reco_sizes.append(hist_reco_size)
@@ -134,7 +137,7 @@ class AnomalyDetectionAlgorithm():
         self.n_histograms = len(list(self.histograms.keys()))
         self.integrals = hist_integrals
         self.reco_sizes = hist_reco_sizes
-
+        print("FINE HERE")
         logger.debug("[AnomalyDetectionAlgorithm : load_data] Loaded data for %d histograms with %d events in training set, excluding the %d test runs and %d bad runs." % (self.n_histograms, self.n_train, self.n_test, self.n_bad_runs))
 
         self.data_is_loaded = True
@@ -222,20 +225,15 @@ class AnomalyDetectionAlgorithm():
                 maxpull_tol0_vals.append(maxpull_tol0_AB)
                 chi2_tol1_vals.append(chi2_tol1_AB)
                 maxpull_tol1_vals.append(maxpull_tol1_AB)
-                #data_hist_raw_vals.append(numpy.array(data_hist_raw))
-                #ref_hist_raw_vals.append(numpy.array(ref_hists_raw[0][0]))
-                #if run < 3:
-                #    print("data")
-                #    print(data_hist_raw)
-                #    print("ref")
-                #    print(ref_hists_raw[0][0])
+                data_hist_raw_vals.append(numpy.array(data_hist_raw))
+                ref_hist_raw_vals.append(numpy.array(ref_hists_raw[0][0]))
                 
             chi2_tol0_all_hists.append(chi2_tol0_vals)
             maxpull_tol0_all_hists.append(maxpull_tol0_vals)
             chi2_tol1_all_hists.append(chi2_tol1_vals)
             maxpull_tol1_all_hists.append(maxpull_tol1_vals)
-            #data_raw_all_hists.append(numpy.array(data_raw))
-            #ref_raw_all_hists.append(numpy.array(ref_raw))
+            data_raw_all_hists.append(numpy.array(data_raw))
+            ref_raw_all_hists.append(numpy.array(ref_raw))
 
         self.df = awkward.zip(filtered_fields)
         chi2df = awkward.zip(chi2_filtered_fds)
@@ -247,9 +245,6 @@ class AnomalyDetectionAlgorithm():
             integrals_for_each_run = []
             for run in range(len(integ_info)):
                 integ_value = numpy.sum(numpy.copy(numpy.array(integ_info[run])))
-                #if reco_df["run_number"][run] == 361365:
-                #    print(reco_df["run_number"][run])
-                #    print(desired_hists_for_study[hist_iter] + "," + str(integ_value))
                 integrals_for_each_run.append(integ_value)
             complete_set_of_integrals.append(integrals_for_each_run)
 
@@ -276,18 +271,15 @@ class AnomalyDetectionAlgorithm():
             maxpull_tol0_field = awkward.Array(maxpull_tol0_all_hists[hist_iter])
             chi2_tol1_field = awkward.Array(chi2_tol1_all_hists[hist_iter])
             maxpull_tol1_field = awkward.Array(maxpull_tol1_all_hists[hist_iter])
-            #data_raw_field = awkward.Array(data_raw_all_hists[hist_iter])
-            #ref_raw_field = awkward.Array(ref_raw_all_hists[hist_iter])
+            data_raw_field = awkward.Array(data_raw_all_hists[hist_iter])
+            ref_raw_field = awkward.Array(ref_raw_all_hists[hist_iter])
             chi2df = awkward.with_field(chi2df, chi2_tol0_field, desired_hists_for_study[hist_iter] + "_chi2_tol0")
             chi2df = awkward.with_field(chi2df, maxpull_tol0_field, desired_hists_for_study[hist_iter] + "_maxpull_tol0")
             chi2df = awkward.with_field(chi2df, chi2_tol1_field, desired_hists_for_study[hist_iter] + "_chi2_tol1")
             chi2df = awkward.with_field(chi2df, maxpull_tol1_field, desired_hists_for_study[hist_iter] + "_maxpull_tol1")
-            #chi2df = awkward.with_field(chi2df, data_raw_field, desired_hists_for_study[hist_iter] + "_original")
-            #chi2df = awkward.with_field(chi2df, ref_raw_field, desired_hists_for_study[hist_iter] + "_prediction")
+            chi2df = awkward.with_field(chi2df, data_raw_field, desired_hists_for_study[hist_iter] + "_original")
+            chi2df = awkward.with_field(chi2df, ref_raw_field, desired_hists_for_study[hist_iter] + "_prediction")
             chi2df = awkward.with_field(chi2df, self.integrals[hist_iter], desired_hists_for_study[hist_iter] + "_integral")
-
-
-        print("NOW MOVING TO SIZE AND INTEGRAL INFO")
 
         complete_set_of_hist_sizes = numpy.array(self.reco_sizes)
         repeated_arrays = [numpy.full(len(chi2df), value) for value in complete_set_of_hist_sizes]
@@ -313,23 +305,17 @@ class AnomalyDetectionAlgorithm():
             csv_writer.writeheader()
             csv_writer.writerows(list_of_dicts)
 
-        print("WRITTEN SELF DF")
-
         with open(chi2_analysis_output_file, 'w', newline='') as csv_file:
             # Create a CSV writer object
             csv_writer = csv.DictWriter(csv_file, fieldnames=chi2dfnames)
             csv_writer.writeheader()
             csv_writer.writerows(chi2_dicts)
 
-        print("WRITTEN CHI2 DF")
-
         with open(reco_analysis_output_file, 'w', newline='') as csv_file:
             # Create a CSV writer object
             csv_writer = csv.DictWriter(csv_file, fieldnames=recodfnames)
             csv_writer.writeheader()
             csv_writer.writerows(reco_df_dicts)
-
-        print("WRITTEN RECO DF")
 
         self.config_file = "%s/%s_%s.json" % (self.output_dir, self.name, self.tag)
         logger.info("[AnomalyDetectionAlgorithm : save] Saving output for large data SSE assessment '%s'." % (self.output_file))

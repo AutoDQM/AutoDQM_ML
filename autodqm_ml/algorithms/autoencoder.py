@@ -157,19 +157,20 @@ class AutoEncoder(MLAlgorithm):
             for name, pred in predictions.items():
                 hist_name = self.histogram_name_map[name.replace("output_", "")] # shape [n_runs, histogram dimensions, 1]
                 original_hist = self.df[hist_name] # shape [n_runs, histogram dimensions]
-                
+                print(original_hist["shape"])
+                print(original_hist["n_dim"])
                 reconstructed_hist = awkward.flatten( # change shape from [n_runs, histogram dimensions, 1] -> [n_runs, histogram dimensions]
                         awkward.from_numpy(pred),
                         axis = -1 
                 )
 
                 #original_hist = awkward.Array(self.means[indxx] for _ in original_hist)
-                if indxx == 0:
-                    print(self.means[indxx])
+                #if indxx == 0:
+                #    print(self.means[indxx])
 
-                original_hist = awkward.Array([arr + self.means[indxx] for arr in original_hist])
-                reconstructed_hist = awkward.Array([arr + self.means[indxx] for arr in reconstructed_hist])
-                indxx = indxx + 1
+                #original_hist = awkward.Array([arr + self.means[indxx] for arr in original_hist])
+                #reconstructed_hist = awkward.Array([arr + self.means[indxx] for arr in reconstructed_hist])
+                #indxx = indxx + 1
 
                 sse = awkward.sum( # perform sum along inner-most axis, i.e. first histogram dimension
                         (original_hist - reconstructed_hist) ** 2,
@@ -177,7 +178,7 @@ class AutoEncoder(MLAlgorithm):
                 )
                 
                 # For 2d histograms, we need to sum over one more axis to get a single SSE score for each run
-                self.df[hist_name] = original_hist
+                #self.df[hist_name] = original_hist
                 if self.histograms[hist_name]["n_dim"] == 2:
                     sse = awkward.sum(sse, axis = -1) # second histogram dimension
 
