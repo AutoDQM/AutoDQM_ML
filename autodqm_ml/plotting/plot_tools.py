@@ -86,7 +86,7 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, mean_hist, run,
     x_label = name + " (a.u.)"
     y_label = "Fraction of events"
     
-    rat_lim = kwargs.get("rat_lim", [-0.0008, 0.0008])
+    rat_lim = kwargs.get("rat_lim", [-0.02, 0.02])
     log_y = kwargs.get("log_y", False)
 
     h_orig = Hist1D(original, bins = bins, label = "Run " + str(run) + " data")
@@ -101,14 +101,19 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, mean_hist, run,
     for reco, info in recos.items():
         if "pca" in reco.lower():
             algo_name = "PCA reconstruction"
+            quick_val = "0.390"
         elif "ae" in reco.lower():
             algo_name = "AE reconstruction"
+            quick_val = "0.670"
         else:
             algo_name = "Reconstruction"
+            quick_val = "0.00"
 
         #h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE $\times$ 1000 = " + str("{:.3g}".format(1000*info["score"]))) # This is just for the paper
-        h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE*nBins = " + str("{:.3g}".format(info["score"])))
+        #h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE*nBins = " + str("{:.3g}".format(info["score"])))
         #h = Hist1D(info["reco"], bins = bins, label = algo_name + " (ML + mean) \n" + r"SSE = " + str("{:.3g}".format(info["score"])))
+        
+        h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"$\chi^{2}\prime$ = " + quick_val) # This is just for the paper
 
         #hnomean_info = info["reco"] - mean_hist
         #hnomean = Hist1D(hnomean_info, bins = bins, label = algo_name + " (ML reco only)")
@@ -152,8 +157,8 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, mean_hist, run,
         text.set_fontsize(universal_font_size)
     ax2.set_ylabel("Data - Reconstruction", fontsize = universal_font_size)
     #ax2.set_ylabel("Data - Reco (ML + mean)", fontsize = universal_font_size)
-    ax2.set_xlabel(x_label, fontsize = universal_font_size)
-    #ax2.set_xlabel(r"L1T muon $\eta$", fontsize = universal_font_size)
+    #ax2.set_xlabel(x_label, fontsize = universal_font_size)
+    ax2.set_xlabel(r"L1T muon $\eta$", fontsize = universal_font_size)
     ax2.set_ylim(rat_lim)
 
     xticks = [0.0,0.2,0.4,0.6,0.8,1.0]

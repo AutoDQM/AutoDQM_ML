@@ -127,9 +127,7 @@ class AutoEncoder(MLAlgorithm):
             callbacks = []
             if self.config["early_stopping"]:
                 callbacks.append(keras.callbacks.EarlyStopping(patience = self.config["early_stopping_rounds"]))
-            #print(self.config["n_components"])
-            #print(list(inputs.values()).shape)
-
+            
             model.fit(
                     inputs,
                     outputs,
@@ -157,8 +155,6 @@ class AutoEncoder(MLAlgorithm):
             for name, pred in predictions.items():
                 hist_name = self.histogram_name_map[name.replace("output_", "")] # shape [n_runs, histogram dimensions, 1]
                 original_hist = self.df[hist_name] # shape [n_runs, histogram dimensions]
-                print(original_hist["shape"])
-                print(original_hist["n_dim"])
                 reconstructed_hist = awkward.flatten( # change shape from [n_runs, histogram dimensions, 1] -> [n_runs, histogram dimensions]
                         awkward.from_numpy(pred),
                         axis = -1 
@@ -244,7 +240,7 @@ class AutoEncoder_DNN():
         for i in range(self.n_hidden_layers):
             layer = keras.layers.Dense(
                     units = self.n_nodes,
-                    activation = None,
+                    activation = "relu",
                     name = "hidden_%d" % i,
             )(layer)
 
@@ -283,7 +279,7 @@ class AutoEncoder_DNN():
                         filters = self.n_filters,
                         kernel_size = self.kernel_1d,
                         strides = 1,
-                        activation = None,
+                        activation = "relu",
                         name = name 
                 )(layer)
             elif info["n_dim"] == 2:
@@ -291,7 +287,7 @@ class AutoEncoder_DNN():
                         filters = self.n_filters,
                         kernel_size = self.kernel_2d,
                         strides = 1,
-                        activation = None,
+                        activation = "relu",
                         name = name
                 )(layer)
             if self.batch_norm:
@@ -308,7 +304,7 @@ class AutoEncoder_DNN():
         n_output_units = info["n_bins"] * self.n_filters 
         layer = keras.layers.Dense(
                 units = n_output_units,
-                activation = None,
+                activation = "relu",
                 name = "decoder_input_%s" % info["name"] 
         )(input)
         target_shape = info["shape"] + (self.n_filters,) 
@@ -316,13 +312,13 @@ class AutoEncoder_DNN():
 
         for i in range(self.n_hidden_layers):
             if i == (self.n_hidden_layers - 1):
-                activation = None
+                activation = "relu"
                 n_filters = 1
                 name = "output_%s" % (info["name"])
                 batch_norm = False
                 dropout = 0
             else:
-                activation = None
+                activation = "relu"
                 n_filters = self.n_filters 
                 name = "decoder_%d_%s" % (i, info["name"])
                 batch_norm = self.batch_norm
