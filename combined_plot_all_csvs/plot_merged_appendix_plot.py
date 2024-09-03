@@ -213,8 +213,8 @@ def main():
   tMHF_ROC_good_X_betab = [0.0]
   tMHF_ROC_bad_Y_betab = [0.0]
   for cutoff_index in range(len(betabcah[0,:])):
-    t_cutoff_index_g_MHF_rc = count_mean_runs_above(sse_df_good, betabcah[:,cutoff_index])
-    t_cutoff_index_b_MHF_rc = count_mean_runs_above(sse_df_bad, betabcah[:,cutoff_index])
+    t_cutoff_index_g_MHF_rc = count_mean_runs_above(betab_df_good, betabcah[:,cutoff_index])
+    t_cutoff_index_b_MHF_rc = count_mean_runs_above(betab_df_bad, betabcah[:,cutoff_index])
     tMHF_ROC_good_X_betab.append(t_cutoff_index_g_MHF_rc)
     tMHF_ROC_bad_Y_betab.append(t_cutoff_index_b_MHF_rc)
 
@@ -224,8 +224,8 @@ def main():
   tMHF_ROC_good_X_pca = [0.0]
   tMHF_ROC_bad_Y_pca = [0.0]
   for cutoff_index in range(len(pcacah[0,:])):
-    t_cutoff_index_g_MHF_rc = count_mean_runs_above(sse_df_good, pcacah[:,cutoff_index])
-    t_cutoff_index_b_MHF_rc = count_mean_runs_above(sse_df_bad, pcacah[:,cutoff_index])
+    t_cutoff_index_g_MHF_rc = count_mean_runs_above(pca_df_good, pcacah[:,cutoff_index])
+    t_cutoff_index_b_MHF_rc = count_mean_runs_above(pca_df_bad, pcacah[:,cutoff_index])
     tMHF_ROC_good_X_pca.append(t_cutoff_index_g_MHF_rc)
     tMHF_ROC_bad_Y_pca.append(t_cutoff_index_b_MHF_rc)
 

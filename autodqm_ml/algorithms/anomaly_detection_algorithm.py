@@ -123,9 +123,11 @@ class AnomalyDetectionAlgorithm():
                         logger.debug("[anomaly_detection_algorithm : load_data] Rebinning and normalising the 1D histogram '%s'" % histogram)
                         print(df[histogram])
                         df[histogram] = rebinning_min_occupancy_1d(df[histogram], 0.0033)
+                        new_shape = (len(df[histogram][0]),)
+                        self.histograms[histogram]["shape"] = new_shape
+                        self.histograms[histogram]["n_dim"] = len(new_shape)
+                        self.histograms[histogram]["n_bins"] = len(df[histogram][0])
                         hist_reco_size = len(df[histogram][0])
-                        print(len(df[histogram]))
-                        print(len(df[histogram][0]))
                         logger.debug("[anomaly_detection_algorithm : load_data] Now calculating the mean of this 1D histogram and subtracting this from each individual rebinned and normalised histogram '%s'" % histogram)
             hist_integrals.append(numpy.array(hist_integral).ravel())
             hist_reco_sizes.append(hist_reco_size)
@@ -173,15 +175,20 @@ class AnomalyDetectionAlgorithm():
         reco_analysis_output_file = "%s/%s_%s_reco_integs.csv" % (self.output_dir, self.input_file.split("/")[-1].replace(".parquet", ""), tag)
         reco_df = self.df
 
+        myfinalassessment_output_file = "%s/%s_%s_myfinalassessment.csv" % (self.output_dir, self.input_file.split("/")[-1].replace(".parquet", ""), tag)
+        mfa_df = self.df
+
         desired_hists_for_study = list(histograms.keys())
         score_columns = [hist_name + suffix + tag for hist_name in desired_hists_for_study for suffix in ["_score_", "_scoreXnBins_"]]
         reco_columns = [hist_name + "_reco_" + tag for hist_name in desired_hists_for_study]
         columns_to_keep = ['run_number', 'year', 'label'] + score_columns
         chi2_cols_to_keep = ['run_number', 'year', 'label']
         reco_results = ['run_number', 'year', 'label']
+        mfa_cols = ['run_number', 'year', 'label']
         filtered_fields = {field: self.df[field] for field in self.df.fields if field in columns_to_keep}
         chi2_filtered_fds = {field: chi2df[field] for field in chi2df.fields if field in chi2_cols_to_keep}
         reco_fields = {field: reco_df[field] for field in reco_df.fields if field in reco_results}
+        myfinalassessment_fields = {field: mfa_df[field] for field in mfa_df.fields if field in mfa_cols}
 
         chi2_tol0_all_hists = []
         maxpull_tol0_all_hists = []
@@ -189,6 +196,7 @@ class AnomalyDetectionAlgorithm():
         maxpull_tol1_all_hists = []
         data_raw_all_hists = []
         ref_raw_all_hists = []
+        binocc_by_chi2tol0_all_hists = []
 
         for hist_iter in range(len(desired_hists_for_study)):
             data_raw = chi2df[desired_hists_for_study[hist_iter]] * self.integrals[hist_iter][:, numpy.newaxis]
@@ -203,9 +211,7 @@ class AnomalyDetectionAlgorithm():
             maxpull_tol1_vals = []
             data_hist_raw_vals = []
             ref_hist_raw_vals = []
-
-            print(desired_hists_for_study[hist_iter])
-            print(len(ref_raw[0]))
+            binocc_by_chi2tol0 = []
 
             for run in range(len(data_raw)):
                 data_hist_raw = numpy.round(numpy.copy(numpy.float64(data_raw[run])))
@@ -227,6 +233,7 @@ class AnomalyDetectionAlgorithm():
                 maxpull_tol1_vals.append(maxpull_tol1_AB)
                 data_hist_raw_vals.append(numpy.array(data_hist_raw))
                 ref_hist_raw_vals.append(numpy.array(ref_hists_raw[0][0]))
+                binocc_by_chi2tol0.append(chi2_tol0_AB*(data_hist_raw.sum()**-0.333))
                 
             chi2_tol0_all_hists.append(chi2_tol0_vals)
             maxpull_tol0_all_hists.append(maxpull_tol0_vals)
@@ -234,9 +241,11 @@ class AnomalyDetectionAlgorithm():
             maxpull_tol1_all_hists.append(maxpull_tol1_vals)
             data_raw_all_hists.append(numpy.array(data_raw))
             ref_raw_all_hists.append(numpy.array(ref_raw))
+            binocc_by_chi2tol0_all_hists.append(binocc_by_chi2tol0)
 
         self.df = awkward.zip(filtered_fields)
         chi2df = awkward.zip(chi2_filtered_fds)
+        mfa_df = awkward.zip(myfinalassessment_fields)
 
         complete_set_of_integrals = []
         for hist_iter in range(len(reco_columns)):
@@ -265,6 +274,7 @@ class AnomalyDetectionAlgorithm():
         maxpull_tol0_all_hists = numpy.array(maxpull_tol0_all_hists)
         chi2_tol1_all_hists = numpy.array(chi2_tol1_all_hists)
         maxpull_tol1_all_hists = numpy.array(maxpull_tol1_all_hists)
+        binocc_by_chi2tol0_all_hists = numpy.array(binocc_by_chi2tol0_all_hists)
 
         for hist_iter in range(len(desired_hists_for_study)):
             chi2_tol0_field = awkward.Array(chi2_tol0_all_hists[hist_iter])
@@ -273,6 +283,7 @@ class AnomalyDetectionAlgorithm():
             maxpull_tol1_field = awkward.Array(maxpull_tol1_all_hists[hist_iter])
             data_raw_field = awkward.Array(data_raw_all_hists[hist_iter])
             ref_raw_field = awkward.Array(ref_raw_all_hists[hist_iter])
+            mod_chi2_field = awkward.Array(binocc_by_chi2tol0_all_hists[hist_iter])
             chi2df = awkward.with_field(chi2df, chi2_tol0_field, desired_hists_for_study[hist_iter] + "_chi2_tol0")
             chi2df = awkward.with_field(chi2df, maxpull_tol0_field, desired_hists_for_study[hist_iter] + "_maxpull_tol0")
             chi2df = awkward.with_field(chi2df, chi2_tol1_field, desired_hists_for_study[hist_iter] + "_chi2_tol1")
@@ -280,6 +291,7 @@ class AnomalyDetectionAlgorithm():
             chi2df = awkward.with_field(chi2df, data_raw_field, desired_hists_for_study[hist_iter] + "_original")
             chi2df = awkward.with_field(chi2df, ref_raw_field, desired_hists_for_study[hist_iter] + "_prediction")
             chi2df = awkward.with_field(chi2df, self.integrals[hist_iter], desired_hists_for_study[hist_iter] + "_integral")
+            mfa_df = awkward.with_field(mfa_df, mod_chi2_field, desired_hists_for_study[hist_iter] + "_chi2prime")
 
         complete_set_of_hist_sizes = numpy.array(self.reco_sizes)
         repeated_arrays = [numpy.full(len(chi2df), value) for value in complete_set_of_hist_sizes]
@@ -295,9 +307,11 @@ class AnomalyDetectionAlgorithm():
         list_of_dicts = awkward.to_list(self.df)
         chi2_dicts = awkward.to_list(chi2df)
         reco_df_dicts = awkward.to_list(reco_df)
+        mfa_dicts = awkward.to_list(mfa_df)
         fieldnames = list_of_dicts[0].keys()
         chi2dfnames = chi2_dicts[0].keys()
         recodfnames = reco_df_dicts[0].keys()
+        mfadfnames = mfa_dicts[0].keys()
 
         with open(self.output_file, 'w', newline='') as csv_file:
             # Create a CSV writer object
@@ -316,6 +330,12 @@ class AnomalyDetectionAlgorithm():
             csv_writer = csv.DictWriter(csv_file, fieldnames=recodfnames)
             csv_writer.writeheader()
             csv_writer.writerows(reco_df_dicts)
+
+        with open(myfinalassessment_output_file, 'w', newline='') as csv_file:
+            # Create a CSV writer object
+            csv_writer = csv.DictWriter(csv_file, fieldnames=mfadfnames)
+            csv_writer.writeheader()
+            csv_writer.writerows(mfa_dicts)
 
         self.config_file = "%s/%s_%s.json" % (self.output_dir, self.name, self.tag)
         logger.info("[AnomalyDetectionAlgorithm : save] Saving output for large data SSE assessment '%s'." % (self.output_file))

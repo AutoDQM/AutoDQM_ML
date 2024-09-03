@@ -101,19 +101,19 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, mean_hist, run,
     for reco, info in recos.items():
         if "pca" in reco.lower():
             algo_name = "PCA reconstruction"
-            quick_val = "0.390"
+            quick_val = "0.053"
         elif "ae" in reco.lower():
             algo_name = "AE reconstruction"
-            quick_val = "0.670"
+            quick_val = "0.626"
         else:
             algo_name = "Reconstruction"
             quick_val = "0.00"
 
         #h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE $\times$ 1000 = " + str("{:.3g}".format(1000*info["score"]))) # This is just for the paper
-        #h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE*nBins = " + str("{:.3g}".format(info["score"])))
+        h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE*nBins = " + str("{:.3g}".format(info["score"])))
         #h = Hist1D(info["reco"], bins = bins, label = algo_name + " (ML + mean) \n" + r"SSE = " + str("{:.3g}".format(info["score"])))
         
-        h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"$\chi^{2}\prime$ = " + quick_val) # This is just for the paper
+        #h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"$\chi^{2}\prime$ = " + quick_val) # This is just for the paper
 
         #hnomean_info = info["reco"] - mean_hist
         #hnomean = Hist1D(hnomean_info, bins = bins, label = algo_name + " (ML reco only)")
