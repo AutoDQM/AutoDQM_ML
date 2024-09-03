@@ -110,8 +110,7 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, mean_hist, run,
             quick_val = "0.00"
 
         #h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE $\times$ 1000 = " + str("{:.3g}".format(1000*info["score"]))) # This is just for the paper
-        h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE*nBins = " + str("{:.3g}".format(info["score"])))
-        #h = Hist1D(info["reco"], bins = bins, label = algo_name + " (ML + mean) \n" + r"SSE = " + str("{:.3g}".format(info["score"])))
+        h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE = " + str("{:.3g}".format(info["score"])))
         
         #h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"$\chi^{2}\prime$ = " + quick_val) # This is just for the paper
 
