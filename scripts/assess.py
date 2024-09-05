@@ -153,10 +153,11 @@ def main(args):
                 score_hist_data['algo'].append(algorithm)
                 score_hist_data['score'].append(runs[algorithm_info["score"]][runs['label'] == 0])
                 score_hist_data['bad'].append(runs[algorithm_info["score"]][runs['label'] == 1])
-        if not os.path.isdir(args.output_dir + "/" + h.replace("/", "").replace(" ", "") + "/"):
-            os.mkdir(args.output_dir + "/" + h.replace("/", "").replace(" ", "") + "/")
-        if len(score_hist_data['algo']) != 0:
-            plot_rescaled_score_hist(score_hist_data, h, args.output_dir + "/" + h.replace("/", "").replace(" ", "") + "/" + "score_hist.png")
+        h = '_'.join(h.split("/")[3:])
+        if not os.path.isdir(args.output_dir + "/" + h + "/"):
+            os.mkdir(args.output_dir + "/" + h + "/")
+        #if len(score_hist_data['algo']) != 0:
+            #plot_rescaled_score_hist(score_hist_data, h, args.output_dir + "/" + h + "/" + "score_hist.png")
     # Histogram of sse for algorithms
     splits = {
             "label" : [("train", 0), ("test", 1)]}
@@ -172,8 +173,7 @@ def main(args):
                 for algorithm, algorithm_info in info["algorithms"].items():
                     recos[algorithm] = { "score" : runs_set[algorithm_info["score"]] }
                     recos_by_label[algorithm][name] = { "score" : runs_set[algorithm_info["score"]] }
-
-                h_name = h.replace("/", "").replace(" ", "")
+                h_name = '_'.join(h.split("/")[3:])
                 save_name = args.output_dir + "/" + h_name + "/sse_%s_%s.pdf" % (split, name)
                 make_sse_plot(h_name, recos, save_name)
 
@@ -181,7 +181,7 @@ def main(args):
                 if not recos_alg:
                     continue
                 save_name = args.output_dir + "/" + h_name + "/sse_%s_%s.pdf" % (algorithm, split)
-                make_sse_plot(h_name, recos_alg, save_name) 
+                #make_sse_plot(h_name, recos_alg, save_name) 
  
     # ROC curves (if there are labeled runs)
     has_labeled_runs = {h:True for h in histograms}
@@ -201,10 +201,10 @@ def main(args):
                 pred = labeled_runs[algorithm_info["score"]]
                 roc_results[h][algorithm] = calc_roc_and_unc(labeled_runs['label'], pred)
 
-            h_name = h.replace("/", "").replace(" ", "")
+            h_name = '_'.join(h.split("/")[3:])
             save_name = args.output_dir + "/" + h_name + "/roc.pdf"
-            plot_roc_curve(h_name, roc_results[h], save_name)
-            plot_roc_curve(h_name, roc_results[h], save_name.replace(".pdf", "_log.pdf"), log = True)
+            #plot_roc_curve(h_name, roc_results[h], save_name)
+            #plot_roc_curve(h_name, roc_results[h], save_name.replace(".pdf", "_log.pdf"), log = True)
             #print_eff_table(h_name, roc_results[h])
             
 
@@ -222,8 +222,17 @@ def main(args):
             selected_runs_idx = selected_runs_idx | (runs.run_number == run)
         logger.debug("[assess.py] Will make plots for the %d specified runs: %s" % (len(selected_runs), str(selected_runs)))
     
+    mean_histogram_set = {}
+    print(len(runs))
+    for h, info in histograms.items():
+        original_histogram = runs[info["original"]]
+        mean_histogram = awkward.mean(original_histogram, axis=0)
+        print(h)
+        mean_histogram_set[h] = mean_histogram
+
     runs_trim = runs[selected_runs_idx]
     for h, info in histograms.items():
+        print(mean_histogram_set[h])
         stats_checked = False
         for i in range(len(runs_trim)):
             run = runs_trim[i]
@@ -243,9 +252,9 @@ def main(args):
                         stats['dim_0'].append(len(run[algorithm_info["reco"]]))
                         stats['dim_1'].append(numpy.nan)
             stats_checked = True
-            h_name = h.replace("/", "").replace(" ", "")
+            h_name = '_'.join(h.split("/")[3:])
             save_name = args.output_dir + "/" + h_name + "/Run%d.pdf" % run_number
-            make_original_vs_reconstructed_plot(h_name, original, recos, run_number, save_name, hist_layout = args.hist_layout) 
+            make_original_vs_reconstructed_plot(h_name, original, recos, mean_histogram_set[h], run_number, save_name, hist_layout = args.hist_layout) 
 
     logger.info("[assess.py] Plots written to directory '%s'." % (args.output_dir))
     stat_parquet_dir = args.output_dir + "/assessment_stats.parquet"

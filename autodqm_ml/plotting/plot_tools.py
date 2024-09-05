@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt 
+import matplotlib.ticker
 import numpy as np 
 from pathlib import Path
 import awkward
@@ -14,6 +15,8 @@ from datetime import datetime
 
 import logging
 logger = logging.getLogger(__name__)
+
+universal_font_size = 12
 
 def make_sse_plot(name, recos, save_name, **kwargs):
     x_label = "Anomaly Score"
@@ -39,22 +42,22 @@ def make_sse_plot(name, recos, save_name, **kwargs):
     for idx, h in enumerate(hists):
         h.plot(ax=ax, color = "C%d" % (idx+1), errors = True, linewidth=2)
 
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
+    ax.set_xlabel(x_label, fontsize = universal_font_size)
+    ax.set_ylabel(y_label, fontsize = universal_font_size)
     ax.set_xscale("log")
     ax.set_yscale("log")
 
     logger.debug("[plot_tools.py : make_sse_plot] Writing plot to file '%s'." % (save_name))
     plt.savefig(save_name)
-    plt.savefig(save_name.replace(".pdf", ".png"))
+    #plt.savefig(save_name.replace(".pdf", ".png"))
     plt.clf()
 
 
-def make_original_vs_reconstructed_plot(name, original, recos, run, save_name, hist_layout, **kwargs): 
+def make_original_vs_reconstructed_plot(name, original, recos, mean_hist, run, save_name, hist_layout, **kwargs): 
     n_dim = len(np.array(original).shape)
 
     if n_dim == 1:
-        make_original_vs_reconstructed_plot1d(name, original, recos, run, save_name, **kwargs)
+        make_original_vs_reconstructed_plot1d(name, original, recos, mean_hist, run, save_name, **kwargs)
 
     elif n_dim == 2:
         if hist_layout == 'flatten':
@@ -78,22 +81,46 @@ def make_original_vs_reconstructed_plot(name, original, recos, run, save_name, h
         logger.exception(message)
         raise RuntimeError()
 
-def make_original_vs_reconstructed_plot1d(name, original, recos, run, save_name, **kwargs):
+def make_original_vs_reconstructed_plot1d(name, original, recos, mean_hist, run, save_name, **kwargs):
     bins = "%s, 0, 1" % (len(original))
     x_label = name + " (a.u.)"
     y_label = "Fraction of events"
     
-    rat_lim = kwargs.get("rat_lim", [0.0, 2.0])
+    rat_lim = kwargs.get("rat_lim", [-0.02, 0.02])
     log_y = kwargs.get("log_y", False)
 
-    h_orig = Hist1D(original, bins = bins, label = "original")
+    h_orig = Hist1D(original, bins = bins, label = "Run " + str(run) + " data")
     h_orig._counts = original
+
+    #h_mean = Hist1D(mean_hist, bins = bins, label = "Run " + str(run) + " mean")
+    #h_mean._counts = mean_hist
+
     h_reco = []
-   
+    h_reco_no_mean = []
+
     for reco, info in recos.items():
-        h = Hist1D(info["reco"], bins = bins, label = "%s [sse : %.2E]" % (reco, info["score"]))
+        if "pca" in reco.lower():
+            algo_name = "PCA reconstruction"
+            quick_val = "0.053"
+        elif "ae" in reco.lower():
+            algo_name = "AE reconstruction"
+            quick_val = "0.626"
+        else:
+            algo_name = "Reconstruction"
+            quick_val = "0.00"
+
+        #h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE $\times$ 1000 = " + str("{:.3g}".format(1000*info["score"]))) # This is just for the paper
+        h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"SSE = " + str("{:.3g}".format(info["score"])))
+        
+        #h = Hist1D(info["reco"], bins = bins, label = algo_name + "\n" + r"$\chi^{2}\prime$ = " + quick_val) # This is just for the paper
+
+        #hnomean_info = info["reco"] - mean_hist
+        #hnomean = Hist1D(hnomean_info, bins = bins, label = algo_name + " (ML reco only)")
+
         h._counts = info["reco"]
         h_reco.append(h)
+        #hnomean._counts = hnomean_info
+        #h_reco_no_mean.append(hnomean)
 
     fig, (ax1,ax2) = plt.subplots(2, sharex=True, figsize=(8,6), gridspec_kw=dict(height_ratios=[3, 1]))
     plt.grid()
@@ -101,26 +128,54 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, run, save_name,
     h_orig.plot(ax=ax1, color="black", errors = False, linewidth=2)
     plt.sca(ax1)
 
-    for idx, h in enumerate(h_reco):
-        h.plot(ax=ax1, color = "C%d" % (idx+1), errors = False, linewidth=2)
+    #h_mean.plot(ax=ax1, color="red", errors = False, linewidth=2)
 
     for idx, h in enumerate(h_reco):
-        ratio = h.divide(h_orig)
+        if "pca" in save_name.lower(): idx = idx + 1
+        if ("ae" in save_name.lower()) or ("autoencoder" in save_name.lower()): idx = idx
+        h.plot(ax=ax1, color = "C%d" % (idx+1), errors = False, linewidth=2)
+
+    # for no mean ML output on main plot
+    #for idx, h in enumerate(h_reco_no_mean):
+    #    if "pca" in save_name.lower(): idx = idx + 1
+    #    if ("ae" in save_name.lower()) or ("autoencoder" in save_name.lower()): idx = idx
+    #    h.plot(ax=ax1, color = "blue", errors = False, linewidth=2)
+
+    for idx, h in enumerate(h_reco):
+        if "pca" in save_name.lower(): idx = idx + 1
+        if ("ae" in save_name.lower()) or ("autoencoder" in save_name.lower()): idx = idx
+        #ratio = h.divide(h_orig)
+        ratio = h_orig-h
         ratio.metadata["label"] = None
         ratio.plot(ax=ax2, color = "C%d" % (idx+1), errors = False, linewidth=2)
 
-    ax1.set_ylabel(y_label)
-    ax2.set_ylabel("ML Reco / Original")
-    ax2.set_xlabel(x_label)
+    ax1.set_ylabel(y_label, fontsize = universal_font_size)
+    legend = ax1.legend(loc="upper center")
+    #legend.set_bbox_to_anchor((0.5, 0.9))
+    for text in legend.get_texts():
+        text.set_fontsize(universal_font_size)
+    ax2.set_ylabel("Data - Reconstruction", fontsize = universal_font_size)
+    #ax2.set_ylabel("Data - Reco (ML + mean)", fontsize = universal_font_size)
+    #ax2.set_xlabel(x_label, fontsize = universal_font_size)
+    ax2.set_xlabel(r"L1T muon $\eta$", fontsize = universal_font_size)
     ax2.set_ylim(rat_lim)
-    ax1.set_ylim([0.0, awkward.max(original) * 1.5])
+
+    xticks = [0.0,0.2,0.4,0.6,0.8,1.0]
+    ticklabels = ['-2.5', '-1.5', '-0.5', '0.5', '1.5', '2.5']
+    #ticklabels = ['0.01', '1.01', '2.01', '3.01', '4.01', '5.01']
+    plt.xticks(xticks, ticklabels)
+    #plt.xscale("log")
+
+    plt.gca().xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+
+    #ax1.set_ylim([0.0, awkward.max(original) * 1.5])
 
     if log_y:
         ax1.set_yscale("log")
 
     logger.debug("[plot_tools.py : make_original_vs_reconstructed_plot1d] Writing plot to file '%s'. " % (save_name))
     plt.savefig(save_name)
-    plt.savefig(save_name.replace(".pdf", ".png"))
+    #plt.savefig(save_name.replace(".pdf", ".png"))
     plt.clf()
 
 def make_original_vs_reconstructed_plot2d(name, original, recos, run, save_name, **kwargs):
@@ -175,9 +230,9 @@ def make_original_vs_reconstructed_plot2d(name, original, recos, run, save_name,
         axes[0][idx+1].grid()
         axes[1][idx+1].grid()
     axes[1][0].remove()
-    axes[0][0].set_ylabel(y_label)
+    axes[0][0].set_ylabel(y_label, fontsize = universal_font_size)
     axes[1][1].set_ylabel("ML Reco - Original")
-    axes[0][0].set_xlabel(x_label)
+    axes[0][0].set_xlabel(x_label, fontsize = universal_font_size)
 
 
     logger.debug("[plot_tools.py : make_original_vs_reconstructed_plot1d] Writing plot to file '%s'. " % (save_name))
@@ -211,7 +266,7 @@ def plot1D(original_hist, reconstructed_hist, run, hist_path, algo, threshold):
     ax.bar(binEdges, reconstructed_hist, alpha=0.5, label='reconstructed', width=width)
     plotname = hist_path.split('/')[-1]
     ax.set_title(f'{plotname} {run} {algo}')
-    leg = ax.legend(loc='upper right')
+    leg = ax.legend(loc='upper center',fontsize=universal_font_size)
     text = '\n'.join((
         f'mse: {mse:.4e}',
         ))
@@ -219,14 +274,14 @@ def plot1D(original_hist, reconstructed_hist, run, hist_path, algo, threshold):
     ax.text(.8, 0.1*max(original_hist.max(), reconstructed_hist.max()), text, wrap=True, bbox=props )
     # create directory to save plot
     Path(f'plots/{algo}/{run}').mkdir(parents=True, exist_ok=True)
-    fig.savefig(f'plots/{algo}/{run}/{plotname}.png')
+    #fig.savefig(f'plots/{algo}/{run}/{plotname}.png')
     plt.close('all')
     
     if mse > threshold: 
         fig2, ax2 = plt.subplots()
         ax2.bar(binEdges, np.square(original_hist - reconstructed_hist), alpha=0.5, width=width)
         ax2.set_title(f'MSE {plotname} {run}')
-        fig2.savefig(f'plots/{algo}/{run}/{plotname}-MSE.png')
+        #fig2.savefig(f'plots/{algo}/{run}/{plotname}-MSE.png')
         plt.close('all')
     
 
@@ -265,7 +320,7 @@ def plotMSESummary(original_hists, reconstructed_hists, threshold, hist_paths, r
     sortIdx = np.argsort(mse)
 
     hist,_, _ = ax.hist(mse)
-    ax.set_xlabel('MSE values') 
+    ax.set_xlabel('MSE values', fontsize = universal_font_size) 
     ax.set_title('Summary of all MSE values')
     
     numHistText = [f'num good hists: {num_good_hists}', f'num bad hists: {num_bad_hists}']
@@ -284,7 +339,7 @@ def plotMSESummary(original_hists, reconstructed_hists, threshold, hist_paths, r
     props = dict(boxstyle='round', facecolor='white', alpha=0.5)
     ax.text(1.1*max(mse), 0.5*max(hist), text, wrap=True, bbox=props)
     
-    fig.savefig(f'plots/{algo}/MSE_Summary.png', bbox_inches='tight')
+    #fig.savefig(f'plots/{algo}/MSE_Summary.png', bbox_inches='tight')
 
 
 def plot_roc_curve(h_name, results, save_name, **kwargs):
@@ -327,7 +382,7 @@ def plot_roc_curve(h_name, results, save_name, **kwargs):
 
     logger.debug("[plot_tools.py : plot_roc_curve] Writing plot to file '%s'." % (save_name))
     plt.savefig(save_name)
-    plt.savefig(save_name.replace(".pdf", ".png"))
+    #plt.savefig(save_name.replace(".pdf", ".png"))
     plt.clf()
 
 def plot_rescaled_score_hist(data, hist, savename):
@@ -359,14 +414,14 @@ def plot_rescaled_score_hist(data, hist, savename):
             badax.spines['right'].set_color('tab:orange')
             badax.set_xscale('log')    
     fig.suptitle(hist)
-    axes[0].legend()
+    axes[0].legend(loc="upper center",fontsize=universal_font_size)
     axes[0].set_title('Min-Max Scaled Anomaly Scores')
-    fig.savefig(savename, bbox_inches = 'tight')
+    #fig.savefig(savename, bbox_inches = 'tight')
     fig.savefig(savename.replace('.png', '.pdf'), bbox_inches = 'tight')
     
 def make_training_plots(history, hist, save_file):
         epochs = range(len(history['loss']))
-        print(len(history.columns))
+        #print(len(history.columns))
         fig, axes = plt.subplots(1, len(history.columns), figsize = (len(history.columns)*9, 9))
         i = 0
         fig.suptitle(hist, fontsize = 22)
@@ -394,10 +449,10 @@ def multi_exp_plots(paths, xlabel, x, title, legend = None, logx = False, logy =
         for c in '()[]{}/.,:;?!@#$^&*':
             filename = filename.replace(c, '')
         savepath = savepath[:str.rindex(savepath, '/')] + '/' + filename + '_plots.png'
-        print(savepath)
+        #print(savepath)
     else:
         make_one_var_exp_plots(paths, xlabel, x, axes, legend, logx)
-        plt.savefig(paths + 'plots.png', bbox_inches = 'tight')
+        #plt.savefig(paths + 'plots.png', bbox_inches = 'tight')
 
 def make_one_var_exp_plots(path, xlabel, x, axes, label = None, logx = False):
     data = {'Epochs Trained':[], 'Epochs Trained Std':[],
@@ -456,11 +511,11 @@ def multi_exp_bar_plots(paths, xlabel, title, legend = None):
         for c in '()[]{}/.,:;?!@#$^&*':
             filename = filename.replace(c, '')
         savepath = savepath[:str.rindex(savepath, '/')] + '/' + filename + '_plots.png'
-        print(savepath)
+        #print(savepath)
     else:
         
         make_one_var_exp_bar_plots(paths, xlabel, axes, 0, b, s, 1, legend[0])
-        plt.savefig(paths + 'plots.png', bbox_inches = 'tight')
+        #plt.savefig(paths + 'plots.png', bbox_inches = 'tight')
 
 def make_one_var_exp_bar_plots(path, xlabel, axes, i, b, s, n, label = None):
     data = {'Epochs Trained':[], 'Epochs Trained Std':[],

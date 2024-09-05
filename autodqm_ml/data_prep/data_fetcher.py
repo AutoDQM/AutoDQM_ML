@@ -197,13 +197,14 @@ class DataFetcher():
                                         break
 
 
-                print(len(files))
-                print(len(unique_files))
+                #print(len(files))
+                #print(len(unique_files))
                 if len(unique_files) < 5:
                     logger.info("[DataFetcher : get_list_of_files] Only '%s' runs have been selected, which is a very limited data set. Advise use a full set of runs outside of testing." % (len(unique_files)))
 
                 self.files[pd][year] = unique_files
                 self.files["all"] += unique_files
+                #print(self.files)
 
     @staticmethod
     def construct_eos_path(base_path, pd, year):
@@ -251,6 +252,8 @@ class DataFetcher():
                 if datasets["runs"] is not None:
                     if not any(run in file for run in datasets["runs"]): # check if file matches any of the specified runs
                         continue
+                #if "2022A" in file:
+                #    continue
                 files.append(file)
             else: # this is a subdir or not a root file
                 if datasets["runs"] is not None:
@@ -287,15 +290,10 @@ class DataFetcher():
                     if self.datasets[year]["bad_runs"] is not None:
                         if str(run_number) in self.datasets[year]["bad_runs"]:
                             label = 1 # bad/anomalous
-                        #elif self.datasets[year]["good_runs"] is not None:
-                        else:
-                            label = 0 # if only bad_runs was specified, mark everything not in bad_runs as good
-
-                    #if self.datasets[year]["good_runs"] is not None:
-                    #    if str(run_number) in self.datasets[year]["good_runs"]:
-                    #        label = 0 # good/not anomalous
-                    #    elif self.datasets[year]["bad_runs"] is None:
-                    #        label = 1 # if only good_runs was specified, mark everything not in good_runs as bad
+                    
+                    if self.datasets[year]["good_runs"] is not None:
+                        if str(run_number) in self.datasets[year]["good_runs"]:
+                            label = 0
 
                     logger.debug("[DataFetcher : load_data] Loading histograms from file %s, run %d" % (file, run_number))
 
@@ -315,7 +313,7 @@ class DataFetcher():
                         histograms["label"] = [label]
                         for k, v in histograms.items():
                             self.data[pd][k] += v
-
+        
     def load_data(self, file, run_number, contents): 
         """
         Load specified histograms from a given file.
@@ -355,6 +353,40 @@ class DataFetcher():
         logger.debug("[DataFetcher : load_data] Histogram contents:")
         for hist, data in hist_data.items():
             logger.debug("\t %s : %s" % (hist, data))
+
+
+        '''
+        ## This is just a module to flatten histograms, it was from a test to see if the AE performance changed between 1D and 2D inputs
+        ## for the same histograms. The results were that there was no effect, and with the new rebinning procedure this is largely a 
+        ## redundant study as 2D hists are flattened de facto later on.
+        replacement_hists = []
+
+        #print(list(hist_data.values()))
+        for histogram_set in list(hist_data.values()):
+            if len(histogram_set[0].shape) > 1:
+                print("HERE")
+                #print(histogram_set[0])
+                #print(len(histogram_set),len(histogram_set[0]),len(histogram_set[0][0]))
+                #df[histogram] = rebinning_min_occupancy(df[histogram], 0.001)
+                #print(len(df[histogram]),len(df[histogram][0]))
+
+
+            for histogram_indiv in histogram_set:
+                #print(histogram_indiv)
+                #print(numpy.array(histogram_indiv).shape)
+                if numpy.array(histogram_indiv).ndim == 1:
+                    replacement_hists.append([histogram_indiv])
+                if numpy.array(histogram_indiv).ndim >= 2:
+                    #print(numpy.array(histogram_indiv).shape)
+                    #print(histogram_indiv)
+                    flattened_array = numpy.ravel(numpy.array(histogram_indiv))
+                    conv_flattened_array = [flattened_array.astype(numpy.float32)]
+                    replacement_hists.append(conv_flattened_array)
+
+        #print(replacement_hists)
+        for key, new_value in zip(hist_data.keys(), replacement_hists):
+            hist_data[key] = new_value
+        '''
 
         return hist_data
 

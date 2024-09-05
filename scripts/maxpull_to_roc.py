@@ -30,7 +30,7 @@ def parse_arguments():
   )
   parser.add_argument(
     "--input_file",
-    help = "input file (i.e. output csv file from train.py)",
+    help = "input file (i.e. output from fetch_data.py) to use for training the ML algorithm",
     type = str,
     required = True,
     default = None
@@ -65,7 +65,7 @@ def count_fraction_runs_above(Fdf, Fthreshold_list, N_bad_hists):
 def main(args):
   os.system("mkdir -p %s/" % args.output_dir)
   arguments = sys.argv
-  with open(args.output_dir + '/commands_sse_scores_to_roc.txt', 'w') as f:
+  with open(args.output_dir + '/commands_chi2_maxpull_to_roc.txt', 'w') as f:
     for arg in arguments:
       f.write(arg + ' ')
 
@@ -76,10 +76,10 @@ def main(args):
   if "ae" in algorithm_name.lower() or "autoencoder" in algorithm_name.lower(): ender = "D"
 
   sse_df = sse_df.loc[:,~sse_df.columns.duplicated()].copy()
-  hist_cols = [col for col in sse_df.columns if '_score_' in col]
+  hist_cols = [col for col in sse_df.columns if '_maxpull_tol1' in col]
   hist_dict = {each_hist: "max" for each_hist in hist_cols}
 
-  sse_df = sse_df.groupby(['run_number','label'])[hist_cols].agg(hist_dict).reset_index()
+  chi2_df = sse_df.groupby(['run_number','label'])[hist_cols].agg(hist_dict).reset_index()
 
   sse_df = sse_df.sort_values(['label']).reset_index()
   sse_df = sse_df[['run_number','label'] + [col for col in sse_df.columns if (col != 'run_number')&(col != 'label')]]
@@ -159,7 +159,7 @@ def main(args):
   axs[1].plot(tFRF_ROC_good_X[0],tFRF_ROC_bad_Y[0], '-rD', mfc='purple', mec='k', markersize=8, linewidth=1, label='SSE thresholds, N = ' + str(N_bad_hists[0]))
   axs[1].plot(tFRF_ROC_good_X[1],tFRF_ROC_bad_Y[1], '-bo', mfc='yellow', mec='k', markersize=8, linewidth=1, label='SSE thresholds, N = ' + str(N_bad_hists[1]))
   axs[1].plot(tFRF_ROC_good_X[2],tFRF_ROC_bad_Y[2], '-g^', mfc='orange', mec='k', markersize=8, linewidth=1, label='SSE thresholds, N = ' + str(N_bad_hists[2]))
-  axs[1].axis(xmin=0,xmax=0.35,ymin=0,ymax=0.8)
+  axs[1].axis(xmin=0,xmax=0.4,ymin=0,ymax=0.8)
   axs[1].axline((0, 0), slope=1, linestyle='--',linewidth=0.8,color='gray')
   axs[1].annotate(algorithm_name + " RF ROC", xy=(0.05, 0.95), xycoords='axes fraction', xytext=(10, -10), textcoords='offset points', ha='left', va='top', fontsize=12, weight='bold')
   axs[1].legend(loc='lower right')
@@ -169,13 +169,13 @@ def main(args):
   axs[0].plot(tMHF_ROC_good_X,tMHF_ROC_bad_Y, '-rD', mfc='purple', mec='k', markersize=8, linewidth=1, label='SSE thresholds')
   axs[0].axline((0, 0), slope=1, linestyle='--',linewidth=0.8,color='gray')
   axs[0].annotate(algorithm_name + " HF ROC", xy=(0.05, 0.95), xycoords='axes fraction', xytext=(10, -10), textcoords='offset points', ha='left', va='top', fontsize=12, weight='bold')
-  axs[0].axis(xmin=0,xmax=5,ymin=0,ymax=20)
+  axs[0].axis(xmin=0,xmax=8,ymin=0,ymax=25)
   axs[0].legend(loc='lower right')
 
-  plt.savefig(args.output_dir + "/RF_HF_ROC_comparison_" + algorithm_name + ".pdf",bbox_inches='tight')
-  print("SAVED: " + args.output_dir + "/RF_HF_ROC_comparison_" + algorithm_name + ".pdf")
+  plt.savefig(args.output_dir + "/RF_HF_MaxPull_ROC_comparison_" + algorithm_name + ".pdf",bbox_inches='tight')
+  print("SAVED: " + args.output_dir + "/RF_HF_MaxPull_ROC_comparison_" + algorithm_name + ".pdf")
 
-  added_plots = False
+  added_plots = True
 
   if added_plots:
     print("Starting other RF ROC plots")
@@ -214,8 +214,18 @@ def main(args):
       axs_d[N_bh].legend(loc='lower right')
       print("Completed hist flag set",N_bad_hists_comp[N_bh])
 
-  plt.savefig(args.output_dir + "/RF_ROC_comparison_Nvar_" + algorithm_name + ".pdf",bbox_inches='tight')
-  print("SAVED: " + args.output_dir + "/RF_ROC_comparison_Nvar_" + algorithm_name + ".pdf")
+  plt.savefig(args.output_dir + "/RF_MaxPull_ROC_comparison_Nvar_" + algorithm_name + ".pdf",bbox_inches='tight')
+  print("SAVED: " + args.output_dir + "/RF_MaxPull_ROC_comparison_Nvar_" + algorithm_name + ".pdf")
+
+
+
+
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
