@@ -98,6 +98,7 @@ class PCA(MLAlgorithm):
 
         if split == "train":
             runs = self.df[self.df.label == 0]
+            print(runs)
         elif split == "all":
             runs = self.df
 
@@ -165,4 +166,3 @@ class PCA(MLAlgorithm):
             )
 
             self.add_prediction(histogram, sse, reconstructed_hist)
-

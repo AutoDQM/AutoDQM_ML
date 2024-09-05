@@ -323,7 +323,10 @@ def pull(D_raw, R_list_raw, tol=0.01):
     for iR in range(len(R_list_raw)):
         R_raw = R_list_raw[iR]
         ## Get reference hist normalized to 1
-        R_prob_wgt = R_raw / np.sum(R_raw)
+        if np.sum(R_raw) == 0.0:
+            R_prob_wgt = 0
+        else:
+            R_prob_wgt = R_raw / np.sum(R_raw)
         ## Compute per-bin probabilities relative to sum of probabilites
         prob_rel = np.divide(probs[iR], np.array(probs).sum(axis=0))
         ## Scale normalized reference by per-bin relative probabilities
@@ -357,7 +360,10 @@ def Mean(Data, Ref, func):
     nData = np.sum(np.array(Data))
     nRef = np.sum(np.array(Ref))
     if func == 'Gaus1' or func == 'Gaus2':
-        return 1.0*nData*Ref/nRef
+        if nRef == 0.0:
+            return 0.0
+        else:
+            return 1.0*nData*Ref/nRef
     ## https://en.wikipedia.org/wiki/Beta-binomial_distribution#Moments_and_properties
     ## Note that n = nData, alpha = Ref+1, and beta = nRef-Ref+1, alpha+beta = nRef+2
     if func == 'BetaB' or func == 'Gamma':
