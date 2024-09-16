@@ -7,9 +7,10 @@ dependencies:
   - uproot
   - numpy
   - xrootd
+  - fsspec-xrootd
   - rich
   - pandas
-  - pyarrow
+  - pyarrow>=7.0.0
   - scipy
   - matplotlib
   - tqdm

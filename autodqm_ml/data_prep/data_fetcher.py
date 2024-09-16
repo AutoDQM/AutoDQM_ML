@@ -336,7 +336,8 @@ class DataFetcher():
         # Check if file is corrupt
         try:
             uproot.open(file)
-        except:
+        except Exception as e:
+            print(f"{e}")
             logger.warning("[DataFetcher : load_data] Problem loading file '%s', it might be corrupted. We will just skip this file." % file)
             return None
 
