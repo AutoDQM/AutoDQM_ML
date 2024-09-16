@@ -98,7 +98,7 @@ class PCA(MLAlgorithm):
 
         if split == "train":
             runs = self.df[self.df.label == 0]
-            print(runs)
+            #print(runs)
         elif split == "all":
             runs = self.df
 

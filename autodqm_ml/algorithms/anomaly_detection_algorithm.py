@@ -88,7 +88,7 @@ class AnomalyDetectionAlgorithm():
         for histogram, histogram_info in self.histograms.items():
             self.histograms[histogram]["name"] = histogram.replace("/", "").replace(" ","")
             self.histogram_name_map[self.histograms[histogram]["name"]] = histogram
-            print(self.histograms[histogram]["name"])
+            #print(self.histograms[histogram]["name"])
 
             a = awkward.to_numpy(df[histogram][0])
             self.histograms[histogram]["shape"] = a.shape
@@ -121,7 +121,7 @@ class AnomalyDetectionAlgorithm():
                         #logger.debug("[anomaly_detection_algorithm : load_data] Normalising the 1D histogram '%s' by the sum of total entries." % histogram)
                         df[histogram] = df[histogram] * (1. / sum)
                         logger.debug("[anomaly_detection_algorithm : load_data] Rebinning and normalising the 1D histogram '%s'" % histogram)
-                        print(df[histogram])
+                        #print(df[histogram])
                         df[histogram] = rebinning_min_occupancy_1d(df[histogram], 0.0033)
                         new_shape = (len(df[histogram][0]),)
                         self.histograms[histogram]["shape"] = new_shape
@@ -139,7 +139,6 @@ class AnomalyDetectionAlgorithm():
         self.n_histograms = len(list(self.histograms.keys()))
         self.integrals = hist_integrals
         self.reco_sizes = hist_reco_sizes
-        print("FINE HERE")
         logger.debug("[AnomalyDetectionAlgorithm : load_data] Loaded data for %d histograms with %d events in training set, excluding the %d test runs and %d bad runs." % (self.n_histograms, self.n_train, self.n_test, self.n_bad_runs))
 
         self.data_is_loaded = True
@@ -162,33 +161,27 @@ class AnomalyDetectionAlgorithm():
         """
         os.system("mkdir -p %s" % self.output_dir)
 
-        self.output_file = "%s/%s_%s_runs_and_sse_scores.csv" % (self.output_dir, self.input_file.split("/")[-1].replace(".parquet", ""), tag)
+        self.output_file = "%s/%s_%s_sse_scores.csv" % (self.output_dir, self.input_file.split("/")[-1].replace(".parquet", ""), tag)
 
         if reco_assess_plots == True:
             output_parquet = "%s/%s.parquet" % (self.output_dir, self.input_file.split("/")[-1].replace(".parquet", ""))
             awkward.to_parquet(self.df, output_parquet)
             logger.info("[AnomalyDetectionAlgorithm : save] Saving output for plot assessment '%s'." % (output_parquet))
 
-        chi2_analysis_output_file = "%s/%s_%s_chi2.csv" % (self.output_dir, self.input_file.split("/")[-1].replace(".parquet", ""), tag)
+        chi2_analysis_output_file = "%s/%s_%s_chi2_maxpull_values.csv" % (self.output_dir, self.input_file.split("/")[-1].replace(".parquet", ""), tag)
         chi2df = self.df
 
-        reco_analysis_output_file = "%s/%s_%s_reco_integs.csv" % (self.output_dir, self.input_file.split("/")[-1].replace(".parquet", ""), tag)
-        reco_df = self.df
-
-        myfinalassessment_output_file = "%s/%s_%s_myfinalassessment.csv" % (self.output_dir, self.input_file.split("/")[-1].replace(".parquet", ""), tag)
-        mfa_df = self.df
+        modchi2_output_file = "%s/%s_%s_modified_chi2_values.csv" % (self.output_dir, self.input_file.split("/")[-1].replace(".parquet", ""), tag)
+        modchi2_df = self.df
 
         desired_hists_for_study = list(histograms.keys())
         score_columns = [hist_name + suffix + tag for hist_name in desired_hists_for_study for suffix in ["_score_", "_scoreXnBins_"]]
         reco_columns = [hist_name + "_reco_" + tag for hist_name in desired_hists_for_study]
         columns_to_keep = ['run_number', 'year', 'label'] + score_columns
-        chi2_cols_to_keep = ['run_number', 'year', 'label']
-        reco_results = ['run_number', 'year', 'label']
-        mfa_cols = ['run_number', 'year', 'label']
+        standard_cols = ['run_number', 'year', 'label']
         filtered_fields = {field: self.df[field] for field in self.df.fields if field in columns_to_keep}
-        chi2_filtered_fds = {field: chi2df[field] for field in chi2df.fields if field in chi2_cols_to_keep}
-        reco_fields = {field: reco_df[field] for field in reco_df.fields if field in reco_results}
-        myfinalassessment_fields = {field: mfa_df[field] for field in mfa_df.fields if field in mfa_cols}
+        chi2_filtered_fds = {field: chi2df[field] for field in chi2df.fields if field in standard_cols}
+        modchi2_fields = {field: modchi2_df[field] for field in modchi2_df.fields if field in standard_cols}
 
         chi2_tol0_all_hists = []
         maxpull_tol0_all_hists = []
@@ -245,8 +238,9 @@ class AnomalyDetectionAlgorithm():
 
         self.df = awkward.zip(filtered_fields)
         chi2df = awkward.zip(chi2_filtered_fds)
-        mfa_df = awkward.zip(myfinalassessment_fields)
+        modchi2_df = awkward.zip(modchi2_fields)
 
+        '''
         complete_set_of_integrals = []
         for hist_iter in range(len(reco_columns)):
             integ_info = reco_df[reco_columns[hist_iter]]
@@ -256,8 +250,7 @@ class AnomalyDetectionAlgorithm():
                 integ_value = numpy.sum(numpy.copy(numpy.array(integ_info[run])))
                 integrals_for_each_run.append(integ_value)
             complete_set_of_integrals.append(integrals_for_each_run)
-
-        reco_df = awkward.zip(reco_fields)
+        '''
 
         if algorithm.lower() in ["ae","autoencoder"]:
             algo_name = "ae"
@@ -268,7 +261,6 @@ class AnomalyDetectionAlgorithm():
             algo_field = awkward.Array([algo_name] * len(self.df))
             self.df = awkward.with_field(self.df, algo_field, "algo")
             chi2df = awkward.with_field(chi2df, algo_field, "algo")
-            reco_df = awkward.with_field(reco_df, algo_field, "algo")
 
         chi2_tol0_all_hists = numpy.array(chi2_tol0_all_hists)
         maxpull_tol0_all_hists = numpy.array(maxpull_tol0_all_hists)
@@ -290,28 +282,27 @@ class AnomalyDetectionAlgorithm():
             chi2df = awkward.with_field(chi2df, maxpull_tol1_field, desired_hists_for_study[hist_iter] + "_maxpull_tol1")
             chi2df = awkward.with_field(chi2df, data_raw_field, desired_hists_for_study[hist_iter] + "_original")
             chi2df = awkward.with_field(chi2df, ref_raw_field, desired_hists_for_study[hist_iter] + "_prediction")
-            chi2df = awkward.with_field(chi2df, self.integrals[hist_iter], desired_hists_for_study[hist_iter] + "_integral")
-            mfa_df = awkward.with_field(mfa_df, mod_chi2_field, desired_hists_for_study[hist_iter] + "_chi2prime")
 
         complete_set_of_hist_sizes = numpy.array(self.reco_sizes)
         repeated_arrays = [numpy.full(len(chi2df), value) for value in complete_set_of_hist_sizes]
-
         complete_set_of_hist_sizes = numpy.array(repeated_arrays)
-        complete_set_of_integrals = numpy.array(complete_set_of_integrals)
+
         for hist_iter in range(len(desired_hists_for_study)):
-            complete_set_of_integrals_field = awkward.Array(complete_set_of_integrals[hist_iter])
             complete_set_of_hist_sizes_field = awkward.Array(complete_set_of_hist_sizes[hist_iter])
-            reco_df = awkward.with_field(reco_df, complete_set_of_integrals_field, desired_hists_for_study[hist_iter] + "_integral")
-            reco_df = awkward.with_field(reco_df, complete_set_of_hist_sizes_field, reco_columns[hist_iter] + "_size")
+            chi2df = awkward.with_field(chi2df, complete_set_of_hist_sizes_field, reco_columns[hist_iter] + "_size")
+            chi2df = awkward.with_field(chi2df, self.integrals[hist_iter], desired_hists_for_study[hist_iter] + "_integral")
+            self.df = awkward.with_field(self.df, complete_set_of_hist_sizes_field, reco_columns[hist_iter] + "_size")
+            self.df = awkward.with_field(self.df, self.integrals[hist_iter], desired_hists_for_study[hist_iter] + "_integral")
+            modchi2_df = awkward.with_field(modchi2_df, mod_chi2_field, desired_hists_for_study[hist_iter] + "_chi2prime")
+            modchi2_df = awkward.with_field(modchi2_df, complete_set_of_hist_sizes_field, reco_columns[hist_iter] + "_size")
+            modchi2_df = awkward.with_field(modchi2_df, self.integrals[hist_iter], desired_hists_for_study[hist_iter] + "_integral")
 
         list_of_dicts = awkward.to_list(self.df)
         chi2_dicts = awkward.to_list(chi2df)
-        reco_df_dicts = awkward.to_list(reco_df)
-        mfa_dicts = awkward.to_list(mfa_df)
+        modchi2_dicts = awkward.to_list(modchi2_df)
         fieldnames = list_of_dicts[0].keys()
         chi2dfnames = chi2_dicts[0].keys()
-        recodfnames = reco_df_dicts[0].keys()
-        mfadfnames = mfa_dicts[0].keys()
+        modchi2dfnames = modchi2_dicts[0].keys()
 
         with open(self.output_file, 'w', newline='') as csv_file:
             # Create a CSV writer object
@@ -325,20 +316,14 @@ class AnomalyDetectionAlgorithm():
             csv_writer.writeheader()
             csv_writer.writerows(chi2_dicts)
 
-        with open(reco_analysis_output_file, 'w', newline='') as csv_file:
+        with open(modchi2_output_file, 'w', newline='') as csv_file:
             # Create a CSV writer object
-            csv_writer = csv.DictWriter(csv_file, fieldnames=recodfnames)
+            csv_writer = csv.DictWriter(csv_file, fieldnames=modchi2dfnames)
             csv_writer.writeheader()
-            csv_writer.writerows(reco_df_dicts)
-
-        with open(myfinalassessment_output_file, 'w', newline='') as csv_file:
-            # Create a CSV writer object
-            csv_writer = csv.DictWriter(csv_file, fieldnames=mfadfnames)
-            csv_writer.writeheader()
-            csv_writer.writerows(mfa_dicts)
+            csv_writer.writerows(modchi2_dicts)
 
         self.config_file = "%s/%s_%s.json" % (self.output_dir, self.name, self.tag)
-        logger.info("[AnomalyDetectionAlgorithm : save] Saving output for large data SSE assessment '%s'." % (self.output_file))
+        logger.info("[AnomalyDetectionAlgorithm : save] Saving output for large data SSE, Chi2, and modified Chi2 assessment '%s'." % (self.output_file))
         config = {}
         for k,v in vars(self).items():
             if utils.is_json_serializable(v):

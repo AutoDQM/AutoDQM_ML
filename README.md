@@ -125,13 +125,17 @@ Here, the full set or subset of histograms as feature in your `myHistList.json` 
 ```
 python scripts/json_to_string.py -i metadata/histogram_lists/myHistList.json -d DATA_SET_FAMILY
 ```
-FOR SMALL ORIGINAL V RECO STUDIES: If interested in using the `scripts/assess.py` macro to generate plots comparing original and reconstructed histogram distributions (i.e. the original assessment version of the repo), add the argument `--reco_assess_plots True` to the `scripts/train.py` stage to output a parquet file containing the relevant histogram information to do this. This is recommended for a subset of the runs fetched, and a subset of the histograms fetched, due to the exhaustive nature of generating the plots. A typical plotting assessment command for this would be
+FOR INDIVIDUAL HISTOGRAM/RUN ORIGINAL V RECO STUDIES: If interested in using the `scripts/assess.py` macro to generate plots comparing original and reconstructed histogram distributions (i.e. the original assessment version of the repo), add the argument `--reco_assess_plots True` to the `scripts/train.py` stage to output a parquet file containing the relevant histogram information to do this. This is recommended for a subset of the runs fetched, and a subset of the histograms fetched, due to the exhaustive nature of generating the plots. A typical plotting assessment command for this would be
 ```
 python scripts/assess.py --output_dir "assess_data_trained" --input_file "data_fetched/ae/HLTPhysics.parquet" --histograms "CSV-list-of-histos" --algorithms "myAutoencoder" --runs "35XXXX,36XXXX" --debug
 ```
+Three CSV files are produced in the training step: all contain the full set of runs and histograms in an array, alongside the algorithm, year of data production, and the flag corresponding to the goodness of the run. The integral (occupancy of the input histogram pre-normalisation) and the size (number of bins in the rebinned histogram) of each histogram is contained in each CSV.
+
+The CSV files vary based on the metric used to evaluate the difference between the original and the reconstructed histogram: one contains the SSE score, and the SSE score multiplied by the size of the histogram; one contains the Chi2 and maximum pull values (with varying tolerance) as well as the original and reconstructed histogram arrays; and one contains the modified Chi2 metric, where the bias of such a measure is minimised based on studies using a L1T data sets as featured in the AutoDQM paper (pending).
+
 The output CSV files from the training step are then processed to produce ROC curves, which measure the Mean number of Histogram Flags (per each algorithm) per good/bad run (the HF-ROC curve), and the Fraction of Runs with N histogram Flags (RF-ROC), where N = 1, 3, and 5 (although this is simple enough to change in the script). This can be done with the following script:
 ```
-python scripts/sse_scores_to_roc.py --input_file "data_fetched/ae/myOutputFile_test_ae_runs_and_sse_scores.csv" --output_dir "data_fetched/assessment/"
-python scripts/sse_scores_to_roc.py --input_file "data_fetched/pca/myOutputFile_test_pca_runs_and_sse_scores.csv" --output_dir "data_fetched/assessment/"
+python scripts/sse_scores_to_roc.py --input_file "data_fetched/ae/myOutputFile_test_ae_sse_scores.csv" --output_dir "data_fetched/assessment/"
+python scripts/sse_scores_to_roc.py --input_file "data_fetched/pca/myOutputFile_test_pca_sse_scores.csv" --output_dir "data_fetched/assessment/"
 ```
 The end result is two plots per algorithm, one with the HF-ROC curve, and the other with the RF-ROC curve. In cases where the scores are to be combined, there is a template combiner script `scripts/combine_scores.py` which can plot output using the template `scripts/plot_merged_df.py` script.

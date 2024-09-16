@@ -557,7 +557,7 @@ def make_one_var_exp_bar_plots(path, xlabel, axes, i, b, s, n, label = None):
     for item in data:
         if not 'Std' in item:
           x = [s + 2*s*i + j*b for j in range(len(xlabel))]
-          print(data[item])
+          #print(data[item])
           axes[m].bar(x, data[item], yerr = data[item + ' Std'], width = (b-.5)/n, label = label)
           axes[m].set_title(item, fontsize = 18)
           if 'Loss' in item:

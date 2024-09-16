@@ -223,16 +223,13 @@ def main(args):
         logger.debug("[assess.py] Will make plots for the %d specified runs: %s" % (len(selected_runs), str(selected_runs)))
     
     mean_histogram_set = {}
-    print(len(runs))
     for h, info in histograms.items():
         original_histogram = runs[info["original"]]
         mean_histogram = awkward.mean(original_histogram, axis=0)
-        print(h)
         mean_histogram_set[h] = mean_histogram
 
     runs_trim = runs[selected_runs_idx]
     for h, info in histograms.items():
-        print(mean_histogram_set[h])
         stats_checked = False
         for i in range(len(runs_trim)):
             run = runs_trim[i]
