@@ -49,7 +49,7 @@ class PCA(MLAlgorithm):
         pca.singular_values_ = numpy.array(pcaParams['singular_values_'])
         pca.mean_ = numpy.array(pcaParams['mean_'])
         pca.n_components_ = numpy.array(pcaParams['n_components_'])
-        pca.n_features_ = numpy.array(pcaParams['n_features_'])
+        pca.n_features_in_ = numpy.array(pcaParams['n_features_in_'])
         pca.n_samples_ = numpy.array(pcaParams['n_samples_'])
         pca.noise_variance_ = numpy.array(pcaParams['noise_variance_'])
 
@@ -75,7 +75,7 @@ class PCA(MLAlgorithm):
                 'singular_values_' : pca.singular_values_.tolist(),
                 'mean_' : pca.mean_.tolist(),
                 'n_components_' : pca.n_components_,
-                'n_features_' : pca.n_features_, 
+                'n_features_in_' : pca.n_features_in_, 
                 'n_samples_' : pca.n_samples_, 
                 'noise_variance_' : pca.noise_variance_
         }

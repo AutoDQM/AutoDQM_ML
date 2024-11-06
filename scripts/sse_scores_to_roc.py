@@ -214,8 +214,8 @@ def main(args):
       axs_d[N_bh].legend(loc='lower right')
       print("Completed hist flag set",N_bad_hists_comp[N_bh])
 
-  plt.savefig(args.output_dir + "/RF_ROC_comparison_Nvar_" + algorithm_name + ".pdf",bbox_inches='tight')
-  print("SAVED: " + args.output_dir + "/RF_ROC_comparison_Nvar_" + algorithm_name + ".pdf")
+    plt.savefig(args.output_dir + "/RF_ROC_comparison_Nvar_" + algorithm_name + ".pdf",bbox_inches='tight')
+    print("SAVED: " + args.output_dir + "/RF_ROC_comparison_Nvar_" + algorithm_name + ".pdf")
 
 
 if __name__ == "__main__":
