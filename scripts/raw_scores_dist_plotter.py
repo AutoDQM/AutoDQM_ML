@@ -70,17 +70,17 @@ def main(args):
   mp_df = mp_df.sort_values(['label']).reset_index()
   mp_df = mp_df[['run_number','label'] + [col for col in mp_df.columns if (col != 'run_number')&(col != 'label')]]
 
-  sse_df_good = sse_df.loc[sse_df['label'] == 0].reset_index()
+  sse_df_good = sse_df.loc[(sse_df['label'] == 0) | (sse_df['label'] == -1)].reset_index()
   sse_df_bad = sse_df.loc[sse_df['label'] == 1].reset_index()
   sse_df_good = sse_df_good[sse_cols]
   sse_df_bad = sse_df_bad[sse_cols]
 
-  chi2_df_good = chi2_df.loc[chi2_df['label'] == 0].reset_index()
+  chi2_df_good = chi2_df.loc[(chi2_df['label'] == 0) | (chi2_df['label'] == -1)].reset_index()
   chi2_df_bad = chi2_df.loc[chi2_df['label'] == 1].reset_index()
   chi2_df_good = chi2_df_good[chi2_cols]
   chi2_df_bad = chi2_df_bad[chi2_cols]
 
-  mp_df_good = mp_df.loc[mp_df['label'] == 0].reset_index()
+  mp_df_good = mp_df.loc[(mp_df['label'] == 0) | (mp_df['label'] == -1)].reset_index()
   mp_df_bad = mp_df.loc[mp_df['label'] == 1].reset_index()
   mp_df_good = mp_df_good[mp_cols]
   mp_df_bad = mp_df_bad[mp_cols]
@@ -91,9 +91,9 @@ def main(args):
   sse_df_bad_log10 = sse_df_bad_log10.clip(lower=-6, upper=2)
 
   chi2_df_good_log2 = np.log2(chi2_df_good)
-  chi2_df_good_log2 = chi2_df_good_log2.clip(lower=-5, upper=10)
+  chi2_df_good_log2 = chi2_df_good_log2.clip(lower=-8, upper=1)
   chi2_df_bad_log2 = np.log2(chi2_df_bad)
-  chi2_df_bad_log2 = chi2_df_bad_log2.clip(lower=-5, upper=10)
+  chi2_df_bad_log2 = chi2_df_bad_log2.clip(lower=-8, upper=1)
 
   mp_df_good_log2 = np.log2(mp_df_good)
   mp_df_good_log2 = mp_df_good_log2.clip(lower=-5, upper=10)

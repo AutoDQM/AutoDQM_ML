@@ -157,9 +157,9 @@ def main(args):
   print("ae_hf_roc_good,ae_hf_roc_bad,ae_rf_n1_roc_good,ae_rf_n1_roc_bad,ae_rf_n3_roc_good,ae_rf_n3_roc_bad,ae_rf_n5_roc_good,ae_rf_n5_roc_bad")
   for i in range(len(tMHF_ROC_good_X)):
     print(tMHF_ROC_good_X[i],tMHF_ROC_bad_Y[i],tFRF_ROC_good_X[2][i],tFRF_ROC_bad_Y[2][i],tFRF_ROC_good_X[1][i],tFRF_ROC_bad_Y[1][i],tFRF_ROC_good_X[0][i],tFRF_ROC_bad_Y[0][i])
-  axs[1].plot(tFRF_ROC_good_X[0],tFRF_ROC_bad_Y[0], '-rD', mfc='purple', mec='k', markersize=8, linewidth=1, label='SSE thresholds, N = ' + str(N_bad_hists[0]))
-  axs[1].plot(tFRF_ROC_good_X[1],tFRF_ROC_bad_Y[1], '-bo', mfc='yellow', mec='k', markersize=8, linewidth=1, label='SSE thresholds, N = ' + str(N_bad_hists[1]))
-  axs[1].plot(tFRF_ROC_good_X[2],tFRF_ROC_bad_Y[2], '-g^', mfc='orange', mec='k', markersize=8, linewidth=1, label='SSE thresholds, N = ' + str(N_bad_hists[2]))
+  axs[1].plot(tFRF_ROC_good_X[0],tFRF_ROC_bad_Y[0], '-rD', mfc='purple', mec='k', markersize=8, linewidth=1, label='Mod. Chi2 thresholds, N = ' + str(N_bad_hists[0]))
+  axs[1].plot(tFRF_ROC_good_X[1],tFRF_ROC_bad_Y[1], '-bo', mfc='yellow', mec='k', markersize=8, linewidth=1, label='Mod. Chi2 thresholds, N = ' + str(N_bad_hists[1]))
+  axs[1].plot(tFRF_ROC_good_X[2],tFRF_ROC_bad_Y[2], '-g^', mfc='orange', mec='k', markersize=8, linewidth=1, label='Mod. Chi2 thresholds, N = ' + str(N_bad_hists[2]))
   axs[1].axis(xmin=0,xmax=0.35,ymin=0,ymax=0.8)
   axs[1].axline((0, 0), slope=1, linestyle='--',linewidth=0.8,color='gray')
   axs[1].annotate(algorithm_name + " RF ROC", xy=(0.05, 0.95), xycoords='axes fraction', xytext=(10, -10), textcoords='offset points', ha='left', va='top', fontsize=12, weight='bold')
@@ -167,7 +167,7 @@ def main(args):
 
   axs[0].set_xlabel('Mean number of histogram flags per good run')
   axs[0].set_ylabel('Mean number of histogram flags per bad run')
-  axs[0].plot(tMHF_ROC_good_X,tMHF_ROC_bad_Y, '-rD', mfc='purple', mec='k', markersize=8, linewidth=1, label='SSE thresholds')
+  axs[0].plot(tMHF_ROC_good_X,tMHF_ROC_bad_Y, '-rD', mfc='purple', mec='k', markersize=8, linewidth=1, label='Mod. Chi2 thresholds')
   axs[0].axline((0, 0), slope=1, linestyle='--',linewidth=0.8,color='gray')
   axs[0].annotate(algorithm_name + " HF ROC", xy=(0.05, 0.95), xycoords='axes fraction', xytext=(10, -10), textcoords='offset points', ha='left', va='top', fontsize=12, weight='bold')
   axs[0].axis(xmin=0,xmax=5,ymin=0,ymax=20)
