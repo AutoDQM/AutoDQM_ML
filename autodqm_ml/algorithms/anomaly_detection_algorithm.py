@@ -113,7 +113,7 @@ class AnomalyDetectionAlgorithm():
                         self.histograms[histogram]["n_dim"] = len(new_shape)
                         self.histograms[histogram]["n_bins"] = len(df[histogram][0])
                         hist_reco_size = len(df[histogram][0])
-                        logger.debug("[anomaly_detection_algorithm : load_data] Now calculating the mean of this 2D histogram and subtracting this from each individual rebinned and normalised histogram '%s'" % histogram)
+                        #logger.debug("[anomaly_detection_algorithm : load_data] Now calculating the mean of this 2D histogram and subtracting this from each individual rebinned and normalised histogram '%s'" % histogram)
                     else:
                         #print(f"1D,{histogram}")
                         sum = awkward.sum(df[histogram], axis = -1)
@@ -128,7 +128,7 @@ class AnomalyDetectionAlgorithm():
                         self.histograms[histogram]["n_dim"] = len(new_shape)
                         self.histograms[histogram]["n_bins"] = len(df[histogram][0])
                         hist_reco_size = len(df[histogram][0])
-                        logger.debug("[anomaly_detection_algorithm : load_data] Now calculating the mean of this 1D histogram and subtracting this from each individual rebinned and normalised histogram '%s'" % histogram)
+                        #logger.debug("[anomaly_detection_algorithm : load_data] Now calculating the mean of this 1D histogram and subtracting this from each individual rebinned and normalised histogram '%s'" % histogram)
             hist_integrals.append(numpy.array(hist_integral).ravel())
             hist_reco_sizes.append(hist_reco_size)
 
@@ -261,6 +261,7 @@ class AnomalyDetectionAlgorithm():
             algo_field = awkward.Array([algo_name] * len(self.df))
             self.df = awkward.with_field(self.df, algo_field, "algo")
             chi2df = awkward.with_field(chi2df, algo_field, "algo")
+            modchi2_df = awkward.with_field(modchi2_df, algo_field, "algo")
 
         chi2_tol0_all_hists = numpy.array(chi2_tol0_all_hists)
         maxpull_tol0_all_hists = numpy.array(maxpull_tol0_all_hists)
@@ -282,6 +283,7 @@ class AnomalyDetectionAlgorithm():
             chi2df = awkward.with_field(chi2df, maxpull_tol1_field, desired_hists_for_study[hist_iter] + "_maxpull_tol1")
             chi2df = awkward.with_field(chi2df, data_raw_field, desired_hists_for_study[hist_iter] + "_original")
             chi2df = awkward.with_field(chi2df, ref_raw_field, desired_hists_for_study[hist_iter] + "_prediction")
+            modchi2_df = awkward.with_field(modchi2_df, mod_chi2_field, desired_hists_for_study[hist_iter] + "_chi2prime")
 
         complete_set_of_hist_sizes = numpy.array(self.reco_sizes)
         repeated_arrays = [numpy.full(len(chi2df), value) for value in complete_set_of_hist_sizes]
@@ -293,7 +295,6 @@ class AnomalyDetectionAlgorithm():
             chi2df = awkward.with_field(chi2df, self.integrals[hist_iter], desired_hists_for_study[hist_iter] + "_integral")
             self.df = awkward.with_field(self.df, complete_set_of_hist_sizes_field, reco_columns[hist_iter] + "_size")
             self.df = awkward.with_field(self.df, self.integrals[hist_iter], desired_hists_for_study[hist_iter] + "_integral")
-            modchi2_df = awkward.with_field(modchi2_df, mod_chi2_field, desired_hists_for_study[hist_iter] + "_chi2prime")
             modchi2_df = awkward.with_field(modchi2_df, complete_set_of_hist_sizes_field, reco_columns[hist_iter] + "_size")
             modchi2_df = awkward.with_field(modchi2_df, self.integrals[hist_iter], desired_hists_for_study[hist_iter] + "_integral")
 

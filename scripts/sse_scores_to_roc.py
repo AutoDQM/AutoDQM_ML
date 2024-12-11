@@ -84,7 +84,7 @@ def main(args):
   sse_df = sse_df.sort_values(['label']).reset_index()
   sse_df = sse_df[['run_number','label'] + [col for col in sse_df.columns if (col != 'run_number')&(col != 'label')]]
 
-  sse_df_good = sse_df.loc[sse_df['label'] == 0].reset_index()
+  sse_df_good = sse_df.loc[(sse_df['label'] == 0) | (sse_df['label'] == -1)].reset_index()
   sse_df_bad = sse_df.loc[sse_df['label'] == 1].reset_index()
   sse_df_good = sse_df_good[['run_number'] + hist_cols]
   sse_df_bad = sse_df_bad[['run_number'] + hist_cols]

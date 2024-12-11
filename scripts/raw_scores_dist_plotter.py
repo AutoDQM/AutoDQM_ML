@@ -50,8 +50,9 @@ def main(args):
   sse_df = sse_df.loc[:,~sse_df.columns.duplicated()].copy()
   val_df = val_df.loc[:,~val_df.columns.duplicated()].copy()
   sse_cols = [col for col in sse_df.columns if '_score_' in col]
-  chi2_cols = [col for col in val_df.columns if '_chi2_tol1' in col]
-  mp_cols = [col for col in val_df.columns if '_maxpull_tol1' in col]
+  #chi2_cols = [col for col in val_df.columns if '_chi2_tol1' in col]
+  chi2_cols = [col for col in val_df.columns if '_chi2prime' in col]
+  mp_cols = [col for col in val_df.columns if '_chi2prime' in col]
 
   sse_dict = {each_hist: "max" for each_hist in sse_cols}
   chi2_dict = {each_hist: "max" for each_hist in chi2_cols}
@@ -109,6 +110,13 @@ def main(args):
 
   print("[LOGGER] Successfully read files and divided into good and bad runs ready for plotting.")
 
+  directory_path = 'raw_scores_dist_dir'
+  if not os.path.exists(directory_path):
+    os.makedirs(directory_path)
+    print(f"Directory '{directory_path}' created.")
+  else:
+    print(f"Directory '{directory_path}' already exists.")
+
   for i in range(sse_df_good.shape[1]): 
     
     ith_column_heading = sse_df_good.columns[i]
@@ -127,7 +135,7 @@ def main(args):
     #bins_chi2 = np.arange(-5-bin_width_vals,10+bin_width_vals, bin_width_vals)
     #bins_mp = np.arange(-5-bin_width_vals,10+bin_width_vals, bin_width_vals)
 
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 4))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
     fig.suptitle(hist_name)
 
     ax1.hist(sse_df_good_log10.iloc[:, i], bins=bins_sse, color='green', edgecolor='green', alpha=0.5, label="Good runs")
@@ -138,15 +146,15 @@ def main(args):
     
     ax2.hist(chi2_df_good_log2.iloc[:, i], bins=bins_chi2, color='green', edgecolor='green', alpha=0.5, label="Good runs")
     ax2.hist(chi2_df_bad_log2.iloc[:, i], bins=bins_chi2, color='red', edgecolor='red', alpha=0.5, label="Bad runs")
-    ax2.set_xlabel(r'$\chi^{2}$ (log$_{2}$)')
+    ax2.set_xlabel(r'Modified $\chi^{2}$ (log$_{2}$)')
     ax2.set_ylabel('Frequency')
     ax2.legend(loc='upper right')
 
-    ax3.hist(mp_df_good_log2.iloc[:, i], bins=bins_mp, color='green', edgecolor='green', alpha=0.5, label="Good runs")
-    ax3.hist(mp_df_bad_log2.iloc[:, i], bins=bins_mp, color='red', edgecolor='red', alpha=0.5, label="Bad runs")
-    ax3.set_xlabel(r'Max pull (log$_{2}$)')
-    ax3.set_ylabel('Frequency')
-    ax3.legend(loc='upper right')
+    #ax3.hist(mp_df_good_log2.iloc[:, i], bins=bins_mp, color='green', edgecolor='green', alpha=0.5, label="Good runs")
+    #ax3.hist(mp_df_bad_log2.iloc[:, i], bins=bins_mp, color='red', edgecolor='red', alpha=0.5, label="Bad runs")
+    #ax3.set_xlabel(r'Max pull (log$_{2}$)')
+    #ax3.set_ylabel('Frequency')
+    #ax3.legend(loc='upper right')
 
     plt.tight_layout()
     file_name = f'{hist_name}_raw_scores_dist.pdf'
