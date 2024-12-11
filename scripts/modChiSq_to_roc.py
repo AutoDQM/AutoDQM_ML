@@ -1,5 +1,5 @@
 '''
-Macro to use post-scripts/assess.py to convert the lsit of SSE scores to ROC curves for studies over a large data set
+Macro to use post-scripts/assess.py to convert the lsit of Mod. Chi2 scores to ROC curves for studies over a large data set
 Requires input directory where bad_runs_sse_scores.csv is located (this is also the output directory) and list of bad
 runs as labelled by data certification reports or similar (i.e. not algos!) (Runs not in the list of bad runs are 
 considered good runs by default)
@@ -49,13 +49,13 @@ def count_number_of_hists_above_threshold(Fdf, Fthreshold_list):
     bad_hist_array.append(hist_bad_count)
   return bad_hist_array
 
-# returns mean number of runs with SSE above the given threshold
+# returns mean number of runs with Mod. Chi2 above the given threshold
 def count_mean_runs_above(Fdf, Fthreshold_list):
   hists_flagged_per_run = count_number_of_hists_above_threshold(Fdf, Fthreshold_list)
   mean_hists_flagged_per_run = sum(hists_flagged_per_run) / len(Fdf['run_number'])
   return mean_hists_flagged_per_run
 
-# returns fraction of runs with SSE above the given threshold
+# returns fraction of runs with Mod. Chi2 above the given threshold
 def count_fraction_runs_above(Fdf, Fthreshold_list, N_bad_hists):
   hists_flagged_per_run = count_number_of_hists_above_threshold(Fdf, Fthreshold_list)
   count = len([i for i in hists_flagged_per_run if i > N_bad_hists])
@@ -65,7 +65,7 @@ def count_fraction_runs_above(Fdf, Fthreshold_list, N_bad_hists):
 def main(args):
   os.system("mkdir -p %s/" % args.output_dir)
   arguments = sys.argv
-  with open(args.output_dir + '/commands_sse_scores_to_roc.txt', 'w') as f:
+  with open(args.output_dir + '/commands_modChiSq_to_roc.txt', 'w') as f:
     for arg in arguments:
       f.write(arg + ' ')
 
@@ -91,9 +91,10 @@ def main(args):
   sse_df_bad = sse_df_bad[['run_number'] + hist_cols]
 
   # new threshold cut-offs per Si's recommendations
-  # 0th cut-off at 1st highest SSE + (1st - 2nd highest)*0.5
-  # 1st cut-off at mean<1st, 2nd> highest SSE
-  # Nth cut-off at mean<Nth, N+1th> highest SSE
+  # 0th cut-off at 1st highest Mod. Chi2 + (1st - 2nd highest)*0.5
+  # 1st cut-off at mean<1st, 2nd> highest Mod. Chi2
+  # Nth cut-off at mean<Nth, N+1th> highest Mod. Chi2
+
   cutoffs_across_hists = []
   for histogram in hist_cols:
     sse_ordered = sorted(sse_df_good[histogram], reverse=True)
