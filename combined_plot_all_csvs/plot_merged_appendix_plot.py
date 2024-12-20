@@ -48,7 +48,7 @@ def main():
 
   sse_df = pd.read_csv("merged_df.csv")
   betab_df = pd.read_csv("betab_df.csv")
-  pca_df = pd.read_csv("HLTPhysics_PCA_180724_myfinalassessment.csv")
+  pca_df = pd.read_csv("HLTPhysics_PCA_131224_modified_chi2_values.csv")
   sse_df = sse_df.loc[:,~sse_df.columns.duplicated()].copy()
   betab_df = betab_df.loc[:,~betab_df.columns.duplicated()].copy()
   pca_df = pca_df.loc[:,~pca_df.columns.duplicated()].copy()
