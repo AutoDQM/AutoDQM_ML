@@ -91,9 +91,9 @@ def main(args):
   sse_df_bad_log10 = sse_df_bad_log10.clip(lower=-6, upper=2)
 
   chi2_df_good_log2 = np.log2(chi2_df_good)
-  chi2_df_good_log2 = chi2_df_good_log2.clip(lower=-8, upper=1)
+  chi2_df_good_log2 = chi2_df_good_log2.clip(lower=-6, upper=3)
   chi2_df_bad_log2 = np.log2(chi2_df_bad)
-  chi2_df_bad_log2 = chi2_df_bad_log2.clip(lower=-8, upper=1)
+  chi2_df_bad_log2 = chi2_df_bad_log2.clip(lower=-6, upper=3)
 
   mp_df_good_log2 = np.log2(mp_df_good)
   mp_df_good_log2 = mp_df_good_log2.clip(lower=-5, upper=10)

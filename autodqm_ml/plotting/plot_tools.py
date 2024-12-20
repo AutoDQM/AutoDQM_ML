@@ -101,10 +101,10 @@ def make_original_vs_reconstructed_plot1d(name, original, recos, mean_hist, run,
     for reco, info in recos.items():
         if "pca" in reco.lower():
             algo_name = "PCA reconstruction"
-            quick_val = "0.053"
+            quick_val = "0.081"
         elif "ae" in reco.lower():
             algo_name = "AE reconstruction"
-            quick_val = "0.626"
+            quick_val = "0.493"
         else:
             algo_name = "Reconstruction"
             quick_val = "0.00"

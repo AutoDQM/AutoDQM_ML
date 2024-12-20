@@ -460,6 +460,6 @@ def ProbRel(Data, Ref, func, tol=0.01):
 def Sigmas(probRel):
     ## chi2.isf function fails for probRel < 10^-323, so cap at 10^-300 (37 sigma)
     probRel = np.maximum(probRel, pow(10, -300))
-    return np.sqrt(stats.chi2.isf(probRel, 1))
+    return np.sqrt(-2*np.log(probRel))
     ## For very low prob, can use logarithmic approximation:
     ## chi2.isf(prob, 1) = 2 * (np.log(2) - np.log(prob) - 3)
