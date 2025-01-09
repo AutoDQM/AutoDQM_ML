@@ -8,7 +8,7 @@ import sys
 np.set_printoptions(threshold=sys.maxsize)
 ## !!!TODO::change this to take arguments of csv files instead of hard code xlsx file
 N = 3
-algo =   'chi2' # 'pull' #
+
 algos = ['pull', 'chi2']
 
 for algo in algos:
