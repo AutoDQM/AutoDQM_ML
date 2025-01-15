@@ -19,32 +19,28 @@ import awkward
 from autodqm_ml.utils import expand_path
 from autodqm_ml.constants import kANOMALOUS, kGOOD
 
-def count_number_of_hists_above_threshold(Fdf, Fthreshold_list, passno):
+def round_to_sig_figs(values, sig_figs):
+  return [round(val, sig_figs - int(np.floor(np.log10(abs(val)))) - 1) if val != 0 else 0 for val in values]
+
+def round_df_to_sig_figs(df, sig_figs, columns):
+  def round_to_sig(val, sig_figs):
+    if val == 0:
+      return 0
+    return round(val, sig_figs - int(np.floor(np.log10(abs(val)))) - 1)
+
+  df[columns] = df[columns].applymap(lambda x: round_to_sig(x, sig_figs))
+  return df
+
+def count_number_of_hists_above_threshold(Fdf, Fthreshold_list):
   runs_list = Fdf['run_number']
   Ft_list = np.array([float(Fthreshold_list_item) for Fthreshold_list_item in Fthreshold_list])
   hist_bad_count = 0
   bad_hist_array = []
   for run in runs_list:
     run_row = Fdf.loc[Fdf['run_number'] == run].drop(columns=['run_number'])
-    if passno == 0:
-      print("run_row")
-      print(run_row)
-      print("run")
-      print(run)
     run_row = run_row.iloc[0].values
-    hist_bad_count = sum(hist_sse > hist_thresh for hist_sse, hist_thresh in zip(run_row, Ft_list))
+    hist_bad_count = sum(hist_sse >= hist_thresh for hist_sse, hist_thresh in zip(run_row, Ft_list))
     bad_hist_array.append(hist_bad_count)
-    if passno == 0:
-      print("run_row.iloc[0].values")
-      print(run_row)
-      print("hist_bad_count")
-      print(hist_bad_count)
-      passno = 1
-  if passno == 1:
-    print("bad_hist_array")
-    print(bad_hist_array)
-    print(len(bad_hist_array))
-    passno = 2
   return bad_hist_array
 
 # returns mean number of runs with SSE above the given threshold
@@ -54,8 +50,15 @@ def count_mean_runs_above(Fdf, Fthreshold_list):
   return mean_hists_flagged_per_run
 
 # returns fraction of runs with SSE above the given threshold
-def count_fraction_runs_above(Fdf, Fthreshold_list, N_bad_hists, passno):
-  hists_flagged_per_run = count_number_of_hists_above_threshold(Fdf, Fthreshold_list, passno)
+def count_fraction_runs_above(Fdf, Fthreshold_list, N_bad_hists, doOnce):
+  hists_flagged_per_run = count_number_of_hists_above_threshold(Fdf, Fthreshold_list)
+  runs_list = Fdf['run_number']
+  if doOnce:
+    #print(np.sort(hists_flagged_per_run))
+    sorted_indices = np.argsort(hists_flagged_per_run)
+    sorted_runs = runs_list[sorted_indices]
+    #print(sorted_runs)
+  if (len(hists_flagged_per_run) > 100) and doOnce: print(hists_flagged_per_run)
   count = len([i for i in hists_flagged_per_run if i > N_bad_hists])
   count_per_run = count / len(Fdf['run_number'])
   return count_per_run
@@ -70,7 +73,7 @@ def main():
   pca_df = pca_df.loc[:,~pca_df.columns.duplicated()].copy()
 
   hist_cols = [col for col in sse_df.columns if 'Run summary' in col]
-  bbhc = [col for col in betab_df.columns if 'Run summary' in col]
+  bbhc = [col for col in betab_df.columns if 'pull' in col]
   pcahc = [col for col in pca_df.columns if 'Run summary' in col]
   hist_dict = {each_hist: "max" for each_hist in hist_cols}
   bbhd = {each_hist: "max" for each_hist in bbhc}
@@ -95,6 +98,8 @@ def main():
   betab_df_good = betab_df.loc[(betab_df['label'] == 0) | (betab_df['label'] == -1)].reset_index()
   betab_df_bad = betab_df.loc[betab_df['label'] == 1].reset_index()
   betab_df_good = betab_df_good[['run_number'] + bbhc]
+  #betab_df_good = round_df_to_sig_figs(betab_df_good, 9, bbhc)
+  #print(-np.sort(-betab_df_good["L1T/Run summary/L1TStage2CaloLayer2/Isolated-Tau/IsoTausRank_pull_score_beta"]))
   betab_df_bad = betab_df_bad[['run_number'] + bbhc]
 
   pca_df_good = pca_df.loc[(pca_df['label'] == 0) | (pca_df['label'] == -1)].reset_index()
@@ -116,11 +121,6 @@ def main():
       cutoff_ii = 0.5*(sse_ordered[ii]+sse_ordered[ii+1])
       cutoff_thresholds.append(cutoff_ii)
     cutoffs_across_hists.append(cutoff_thresholds)
-    print("len(sse_ordered)")
-    print(len(sse_ordered))
-    #if len(cutoffs_across_hists) == 1:
-    #  print(len(cutoff_thresholds))
-    #  print(cutoff_thresholds) 
 
   cutoffs_across_hists = np.array(cutoffs_across_hists)
 
@@ -133,9 +133,13 @@ def main():
     for ii in range(len(sse_ordered)-1):
       cutoff_ii = 0.5*(sse_ordered[ii]+sse_ordered[ii+1])
       cutoff_thresholds.append(cutoff_ii)
+    #betabcah.append(round_to_sig_figs(cutoff_thresholds, 9))
     betabcah.append(cutoff_thresholds)
+    #if histogram == "L1T/Run summary/L1TStage2CaloLayer2/Isolated-Tau/IsoTausRank_pull_score_beta":
+    #  print("CUTOFFS")
 
   betabcah = np.array(betabcah)
+  #print(betabcah)
 
   pcacah = []
   for histogram in pcahc:
@@ -161,17 +165,10 @@ def main():
   for nbh_ii in N_bad_hists:
     tFRF_ROC_good_X_init = []
     tFRF_ROC_bad_Y_init = []
-    print("LEN SSEDFCAH")
-    print(len(cutoffs_across_hists[0,:]))
-    passno = 0
+    doOnce = False
     for cutoff_index_ssedfcah in range(len(cutoffs_across_hists[0,:])):
-      t_cutoff_index_g_FRF_rc = count_fraction_runs_above(sse_df_good, cutoffs_across_hists[:,cutoff_index_ssedfcah], nbh_ii, passno)
-      t_cutoff_index_b_FRF_rc = count_fraction_runs_above(sse_df_bad, cutoffs_across_hists[:,cutoff_index_ssedfcah], nbh_ii, passno)
-      if passno == 0:
-        print("cutoffs_across_hists[:,cutoff_index_ssedfcah]")
-        print(cutoffs_across_hists[:,cutoff_index_ssedfcah])
-        print(len(cutoffs_across_hists[:,cutoff_index_ssedfcah]))
-      passno = 1
+      t_cutoff_index_g_FRF_rc = count_fraction_runs_above(sse_df_good, cutoffs_across_hists[:,cutoff_index_ssedfcah], nbh_ii, doOnce)
+      t_cutoff_index_b_FRF_rc = count_fraction_runs_above(sse_df_bad, cutoffs_across_hists[:,cutoff_index_ssedfcah], nbh_ii, doOnce)
       tFRF_ROC_good_X_init.append(t_cutoff_index_g_FRF_rc)
       tFRF_ROC_bad_Y_init.append(t_cutoff_index_b_FRF_rc)
 
@@ -179,29 +176,30 @@ def main():
     tFRF_ROC_bad_Y_init = sorted(tFRF_ROC_bad_Y_init)
     tFRF_ROC_good_X.append(tFRF_ROC_good_X_init)
     tFRF_ROC_bad_Y.append(tFRF_ROC_bad_Y_init)
-    #if len(tFRF_ROC_bad_Y) == 1:
-    #  print("tFRF_ROC_bad_Y_init")
-    #  print(tFRF_ROC_bad_Y_init)
-    #  print(len(tFRF_ROC_bad_Y_init))
 
     betabfrgx_init = []
     betabfrby_init = []
+    doOnce = True
     for cutoff_index_betabdfcah in range(len(betabcah[0,:])):
-      t_cutoff_index_g_FRF_rc = count_fraction_runs_above(betab_df_good, betabcah[:,cutoff_index_betabdfcah], nbh_ii)
-      t_cutoff_index_b_FRF_rc = count_fraction_runs_above(betab_df_bad, betabcah[:,cutoff_index_betabdfcah], nbh_ii)
+      t_cutoff_index_g_FRF_rc = count_fraction_runs_above(betab_df_good, betabcah[:,cutoff_index_betabdfcah], nbh_ii, doOnce)
+      t_cutoff_index_b_FRF_rc = count_fraction_runs_above(betab_df_bad, betabcah[:,cutoff_index_betabdfcah], nbh_ii, doOnce)
+      #doOnce = False
       betabfrgx_init.append(t_cutoff_index_g_FRF_rc)
       betabfrby_init.append(t_cutoff_index_b_FRF_rc)
+    doOnce = False
 
     betabfrgx_init = sorted(betabfrgx_init)
     betabfrby_init = sorted(betabfrby_init)
     betabfrgx.append(betabfrgx_init)
     betabfrby.append(betabfrby_init)
+    #print(betabfrgx[0])
+    #print(betabfrby[0])
 
     pcafrgx_init = []
     pcafrby_init = []
     for cutoff_index_pcadfcah in range(len(pcacah[0,:])):
-      t_cutoff_index_g_FRF_rc = count_fraction_runs_above(pca_df_good, pcacah[:,cutoff_index_pcadfcah], nbh_ii)
-      t_cutoff_index_b_FRF_rc = count_fraction_runs_above(pca_df_bad, pcacah[:,cutoff_index_pcadfcah], nbh_ii)
+      t_cutoff_index_g_FRF_rc = count_fraction_runs_above(pca_df_good, pcacah[:,cutoff_index_pcadfcah], nbh_ii, doOnce)
+      t_cutoff_index_b_FRF_rc = count_fraction_runs_above(pca_df_bad, pcacah[:,cutoff_index_pcadfcah], nbh_ii, doOnce)
       pcafrgx_init.append(t_cutoff_index_g_FRF_rc)
       pcafrby_init.append(t_cutoff_index_b_FRF_rc)
 
