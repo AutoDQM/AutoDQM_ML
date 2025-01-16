@@ -40,7 +40,7 @@ def count_number_of_hists_above_threshold(Fdf, Fthreshold_list):
   for run in runs_list:
     run_row = Fdf.loc[Fdf['run_number'] == run].drop(columns=['run_number'])
     run_row = run_row.iloc[0].values
-    hist_bad_count = sum(hist_sse > hist_thresh for hist_sse, hist_thresh in zip(run_row, Ft_list))
+    hist_bad_count = sum(hist_sse >= hist_thresh for hist_sse, hist_thresh in zip(run_row, Ft_list))
     bad_hist_array.append(hist_bad_count)
   return bad_hist_array
 
@@ -59,7 +59,7 @@ def count_mean_runs_above(Fdf, Fthreshold_list, type, single):
 # returns fraction of runs with SSE above the given threshold
 def count_fraction_runs_above(Fdf, Fthreshold_list, N_bad_hists, type, single):
   hists_flagged_per_run = count_number_of_hists_above_threshold(Fdf, Fthreshold_list)
-  count = len([i for i in hists_flagged_per_run if i > N_bad_hists])
+  count = len([i for i in hists_flagged_per_run if i >= N_bad_hists])
   return_this_list = []
   if (N_bad_hists == 3) & (count > 0.1 * len(Fdf['run_number'])) & (type == "good") & (single == 1):
     print("[COUNT_FRACTIONS_RUNS_ABOVE] Tracing the SSE score thresholds for each histogram at the RF data point")
@@ -86,7 +86,7 @@ def count_run_most_flags(df, score_thresholds):
     for histogram_column in df.columns[1:]:
         score = row[histogram_column]
 
-        if score > threshold:
+        if score >= threshold:
             count_exceeds += 1
 
         threshold = next(thresholds_iterator, None)
@@ -195,7 +195,7 @@ def main(args):
     run_data = row.drop('run_number')
 
     # Find histograms above the corresponding scores
-    above_threshold = run_data.index[run_data > thresholds_to_study].tolist()
+    above_threshold = run_data.index[run_data >= thresholds_to_study].tolist()
 
     # Store the result in the dictionary
     result_dict[run] = above_threshold
@@ -226,7 +226,7 @@ def main(args):
 
   for column, threshold in zip(sse_df.columns[1:], thresholds_mh):
     graph_name = column
-    threshold_count = (sse_df[column] > threshold).sum()
+    threshold_count = (sse_df[column] >= threshold).sum()
     result_data_mh['Histogram'].append(graph_name)
     result_data_mh['MH'].append(threshold_count)
 
@@ -234,7 +234,7 @@ def main(args):
 
   for column, threshold in zip(sse_df.columns[1:], thresholds_fr):
     graph_name = column
-    threshold_count = (sse_df[column] > threshold).sum()
+    threshold_count = (sse_df[column] >= threshold).sum()
     result_data_fr['Histogram'].append(graph_name)
     result_data_fr['FR'].append(threshold_count)
 
@@ -246,7 +246,7 @@ def main(args):
 
   for column, threshold in zip(sse_df_bad.columns[1:], thresholds_mh):
     graph_name = column
-    threshold_count = (sse_df_bad[column] > threshold).sum()
+    threshold_count = (sse_df_bad[column] >= threshold).sum()
     result_data_mh_bad['Histogram'].append(graph_name)
     result_data_mh_bad['MH'].append(threshold_count)
 
@@ -255,7 +255,7 @@ def main(args):
 
   for column, threshold in zip(sse_df_bad.columns[1:], thresholds_fr):
     graph_name = column
-    threshold_count = (sse_df_bad[column] > threshold).sum()
+    threshold_count = (sse_df_bad[column] >= threshold).sum()
     result_data_fr_bad['Histogram'].append(graph_name)
     result_data_fr_bad['FR'].append(threshold_count)
 

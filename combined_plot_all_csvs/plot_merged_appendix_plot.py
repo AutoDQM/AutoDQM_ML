@@ -59,7 +59,7 @@ def count_fraction_runs_above(Fdf, Fthreshold_list, N_bad_hists, doOnce):
     sorted_runs = runs_list[sorted_indices]
     #print(sorted_runs)
   if (len(hists_flagged_per_run) > 100) and doOnce: print(hists_flagged_per_run)
-  count = len([i for i in hists_flagged_per_run if i > N_bad_hists])
+  count = len([i for i in hists_flagged_per_run if i >= N_bad_hists])
   count_per_run = count / len(Fdf['run_number'])
   return count_per_run
 

@@ -45,7 +45,7 @@ def count_number_of_hists_above_threshold(Fdf, Fthreshold_list):
   for run in runs_list:
     run_row = Fdf.loc[Fdf['run_number'] == run].drop(columns=['run_number'])
     run_row = run_row.iloc[0].values
-    hist_bad_count = sum(hist_sse > hist_thresh for hist_sse, hist_thresh in zip(run_row, Ft_list))
+    hist_bad_count = sum(hist_sse >= hist_thresh for hist_sse, hist_thresh in zip(run_row, Ft_list))
     # counter for Chi2 only to exclude histograms with Chi2 values < 3, which corresponds to a threshold < 3
     less_3_count = sum(hist_sse < 3 for hist_sse in run_row)
     if (len(run_row) - less_3_count) < hist_bad_count:
@@ -65,7 +65,7 @@ def count_mean_runs_above(Fdf, Fthreshold_list):
 # returns fraction of runs with SSE above the given threshold
 def count_fraction_runs_above(Fdf, Fthreshold_list, N_bad_hists):
   hists_flagged_per_run = count_number_of_hists_above_threshold(Fdf, Fthreshold_list)
-  count = len([i for i in hists_flagged_per_run if i > N_bad_hists])
+  count = len([i for i in hists_flagged_per_run if i >= N_bad_hists])
   count_per_run = count / len(Fdf['run_number'])
   return count_per_run
 
