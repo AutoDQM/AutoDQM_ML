@@ -19,6 +19,7 @@ counts_b = {}
 for algo in algos:
     if (algo == 'chi2') or (algo == 'pull'):
         df = pd.read_csv('HLT_l1tShift_8_REF/L1T_HLTPhysics.csv')
+        df = df.sort_values(by='run_number')
         df_g = df[df['label'] != 1]
         df_b = df[df['label'] == 1]
 
@@ -28,6 +29,7 @@ for algo in algos:
 
     if algo == 'pca' :
         df = pd.read_csv('rob_csv/HLTPhysics_PCA_131224_sse_scores.csv')
+        df = df.sort_values(by='run_number')
         df_g = df[df['label'] != 1]
         df_b = df[df['label'] == 1]
 
@@ -37,13 +39,14 @@ for algo in algos:
 
     if algo == 'chi2prime' :
         df = pd.read_csv('rob_csv/HLTPhysics_PCA_131224_modified_chi2_values.csv')
+        df = df.sort_values(by='run_number')
         df_g = df[df['label'] != 1]
         df_b = df[df['label'] == 1]
+
 
         ## filter out non score columns:
         df_g = df_g.filter(regex=f'_{algo}')
         df_b = df_b.filter(regex=f'_{algo}')
-
 
 
     ## sort descending
@@ -60,14 +63,16 @@ for algo in algos:
     counts_b[algo] = np.array([np.count_nonzero(df_b >= cut, axis=1) for cut in cuts])
 
 
-metrics_list = [['pull','chi2'], ['chi2prime'], algos]
-colors = [ "#f89c20","#e42536", "#5790fc",]
+
+metrics_list =  [['pull','chi2'], ['chi2prime'], algos]
+colors =  [ "#f89c20","#e42536", "#5790fc",]
 markers = [ '-o','-D', '-^']
-legendlabels = ['Beta-binomial $\chi^2$ and max pull', 'PCA modified $\chi^2$', 'PCA and beta-binomial']
+legendlabels =  ['Beta-binomial $\chi^2$ and max pull', 'PCA modified $\chi^2$', 'PCA and beta-binomial']
 
 fig0, ax0= plt.subplots(figsize=(6,6))
 fig1, ax1 = plt.subplots(figsize=(6,6))
 for metrics, color, marker, legendlabel in zip(metrics_list, colors, markers, legendlabels):
+
     total_counts_g = np.zeros_like(counts_g['pull']) ## array of zero so we can append to it
     total_counts_b = np.zeros_like(counts_b['pull'])
     for metric in metrics:
@@ -82,10 +87,8 @@ for metrics, color, marker, legendlabel in zip(metrics_list, colors, markers, le
 
     ## for RF, add all of the counts together by threshold before checking if greater than N, the divided by one of the counts.shape [1]
     # perccomb = np.count_nonzero((counts_g['pull'] + counts_g['chi2']) > N, axis=1)/counts_g['pull'].shape[1]
-    perc_g = np.count_nonzero(total_counts_g > N, axis=1)/total_counts_g.shape[1]
-    perc_b = np.count_nonzero(total_counts_b > N, axis=1)/total_counts_b.shape[1]
-
-
+    perc_g = np.count_nonzero(total_counts_g >= N, axis=1)/total_counts_g.shape[1]
+    perc_b = np.count_nonzero(total_counts_b >= N, axis=1)/total_counts_b.shape[1]
 
 
     ##--------- plotting the output in the same way as rob --------------
@@ -106,7 +109,7 @@ for metrics, color, marker, legendlabel in zip(metrics_list, colors, markers, le
     ax1.axline((0, 0), slope=1, linestyle='--', linewidth=linewidth, color='#964a8b', zorder=0)
     ax1.plot(perc_g, perc_b, marker, mfc=color, color=color, mec='k', markersize=8, linewidth=1, label=legendlabel)
     ax1.axis(xmin=0,xmax=0.35,ymin=0,ymax=0.8)
-    ax1.annotate(f"Combined beta-binomial and PCA tests", xy=(0.05, 0.98), xycoords='axes fraction', xytext=(10, -10), textcoords='offset points', ha='left', va='top', fontsize=16, fontstyle='italic')
+    ax1.annotate(f"Combined beta-binomial and PCA tests", xy=(0.05, 0.98), xycoords='axes fraction', xytext=(10, -10), textcoords='offset points', ha='left', va='top', fontsize=14, fontstyle='italic')
     ax1.legend(loc='lower right', fontsize=annotatesize)
     ax1.text(0, 1.02, "CMS", fontsize=cmssize, weight='bold',transform=ax1.transAxes)
     ax1.text(0.15, 1.02, "Preliminary", fontsize=cmssize-4, fontstyle='italic', transform=ax1.transAxes)
@@ -118,8 +121,8 @@ for metrics, color, marker, legendlabel in zip(metrics_list, colors, markers, le
     ax0.set_ylabel('Mean histogram flags per bad run', fontsize=yaxislabelsize, labelpad=labelpad)
     ax0.axline((0, 0), slope=1, linestyle='--',linewidth=linewidth,color='#964a8b', zorder=0)
     ax0.plot(avg_cnt_g, avg_cnt_b, marker, mfc=color, color=color, mec='k', markersize=8, linewidth=1, label=legendlabel)
-    ax0.annotate(f"Combined beta-binomial and PCA tests", xy=(0.05, 0.98), xycoords='axes fraction', xytext=(10, -10), textcoords='offset points', ha='left', va='top', fontsize=annotatesize, fontstyle='italic')
-    ax0.axis(xmin=0,xmax=5,ymin=0,ymax=20)
+    ax0.annotate(f"Combined beta-binomial and PCA tests", xy=(0.05, 0.98), xycoords='axes fraction', xytext=(10, -10), textcoords='offset points', ha='left', va='top', fontsize=annotatesize-2, fontstyle='italic')
+    ax0.axis(xmin=0,xmax=5,ymin=0,ymax=25) #20)
     ax0.legend(loc='center left', fontsize=annotatesize, bbox_to_anchor=(0.05, 0.75), bbox_transform=ax0.transAxes)
     ax0.text(0, 1.02, "CMS", fontsize=cmssize, weight='bold', transform=ax0.transAxes)
     ax0.text(0.15, 1.02, "Preliminary", fontsize=cmssize-4, fontstyle='italic', transform=ax0.transAxes)
@@ -129,6 +132,6 @@ for metrics, color, marker, legendlabel in zip(metrics_list, colors, markers, le
 
     #for cut in cuts[:4]:
     #    print(cut)
-fig0.savefig("plots/Combined_HF_ROC_comparison.pdf",bbox_inches='tight')
+fig0.savefig("plots/sorted/Combined_HF_ROC_comparison.pdf",bbox_inches='tight')
 #print("SAVED: " + args.output_dir + "/RF_HF_ROC_comparison_" + algorithm_name + ".pdf")
-fig1.savefig("plots/Combined_RF_ROC_comparison.pdf",bbox_inches='tight')
+fig1.savefig("plots/sorted/Combined_RF_ROC_comparison.pdf",bbox_inches='tight')

@@ -22,6 +22,7 @@ for algo in algos:
         # assumed all csv files are same name but in different directories
         # df = pd.read_csv('oldpull/HLT_l1tShift_{}/L1T_HLTPhysics.csv'.format(numref))
         df = pd.read_csv('HLT_l1tShift_{}/L1T_HLTPhysics.csv'.format(numref))
+        df = df.sort_values(by='run_number')
 
         ## split into good (0,-1) and bad runs (1)
         df_g = df[df['label'] != 1]
@@ -66,8 +67,8 @@ for algo in algos:
 
 
         # --------------- percent runs given N fails -----------------
-        perc_g = np.count_nonzero(counts_g > N, axis=1)/counts_g.shape[1]
-        perc_b = np.count_nonzero(counts_b > N, axis=1)/counts_b.shape[1]
+        perc_g = np.count_nonzero(counts_g >= N, axis=1)/counts_g.shape[1]
+        perc_b = np.count_nonzero(counts_b >= N, axis=1)/counts_b.shape[1]
 
         ##--------- plotting the output in the same way as rob --------------
         # algorithm_name = "combined"
@@ -101,6 +102,10 @@ for algo in algos:
         ax0.plot(avg_cnt_g, avg_cnt_b, marker, mfc=color, color=color, mec='k', markersize=8, linewidth=1, label=legendlabel)
         ax0.annotate(f"Beta-binomial {algorithm_name} test", xy=(0.05, 0.98), xycoords='axes fraction', xytext=(10, -10), textcoords='offset points', ha='left', va='top', fontsize=annotatesize, fontstyle='italic')
         ax0.axis(xmin=0,xmax=5,ymin=0,ymax=20)
+        yticks = ax0.yaxis.get_major_ticks()
+        print(yticks)
+        for i in [1,3,5,7]:
+            yticks[i].set_visible(False) ## remove the 2.5,7.5.12.5,.17.5 from the ticks on yaxi
         ax0.legend(loc='center left', fontsize=annotatesize, bbox_to_anchor=(0.05, 0.75), bbox_transform=ax0.transAxes)
         ax0.text(0, 1.02, "CMS", fontsize=cmssize, weight='bold', transform=ax0.transAxes)
         ax0.text(0.15, 1.02, "Preliminary", fontsize=cmssize-4, fontstyle='italic', transform=ax0.transAxes)
@@ -110,6 +115,6 @@ for algo in algos:
 
     #for cut in cuts[:4]:
     #    print(cut)
-    fig0.savefig("plots/HF_ROC_comparison_" + algorithm_name + ".pdf",bbox_inches='tight')
+    fig0.savefig("plots/sorted/HF_ROC_comparison_" + algorithm_name + ".pdf",bbox_inches='tight')
     #print("SAVED: " + args.output_dir + "/RF_HF_ROC_comparison_" + algorithm_name + ".pdf")
-    fig1.savefig("plots/RF_ROC_comparison_" + algorithm_name + ".pdf",bbox_inches='tight')
+    fig1.savefig("plots/sorted/RF_ROC_comparison_" + algorithm_name + ".pdf",bbox_inches='tight')
